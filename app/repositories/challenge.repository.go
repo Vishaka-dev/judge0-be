@@ -68,6 +68,11 @@ func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, in
 		challenges = append(challenges, challenge)
 	}
 
+	if err := rows.Err(); err != nil {
+		log.Println("Rows Error:", err)
+		return nil, 0, 0, err
+	}
+
 	return challenges, page, totalPages, nil
 }
 
