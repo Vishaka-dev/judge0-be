@@ -51,8 +51,8 @@ func GetChallengeByIdHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusInternalServerError, gin.H{
-		"error": "Challenge type not supported",
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": "Challenge not found",
 	})
 
 }
