@@ -8,11 +8,9 @@ import (
 )
 
 type Config struct {
-	SupabaseURL        string
-	SupabaseAnonKey    string
-	SupabaseServiceKey string
-	SecretKey          string
-	Judge0API          string
+	SecretKey string
+	Judge0API string
+	PGURL     string
 }
 
 var (
@@ -25,11 +23,9 @@ func Load() *Config {
 		godotenv.Load()
 
 		cfg = &Config{
-			SupabaseURL:        os.Getenv("SUPABASE_URL"),
-			SupabaseAnonKey:    os.Getenv("SUPABASE_ANON_KEY"),
-			SupabaseServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
-			SecretKey:          os.Getenv("SECRET_KEY"),
-			Judge0API:          os.Getenv("JUDGE0_API"),
+			SecretKey: os.Getenv("SECRET_KEY"),
+			Judge0API: os.Getenv("JUDGE0_API"),
+			PGURL:     os.Getenv("PG_URL"),
 		}
 	})
 	return cfg

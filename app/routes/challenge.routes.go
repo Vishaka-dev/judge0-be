@@ -8,6 +8,6 @@ import (
 func ChallengeRoutes(r *gin.RouterGroup) {
 	challenge := r.Group("/challenge")
 	{
-		challenge.GET("/get", handlers.GetChallengesHandler)
+		challenge.GET("/get", handlers.GetAllChallengesHandler)
 	}
 }
