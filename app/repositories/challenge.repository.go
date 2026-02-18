@@ -76,11 +76,11 @@ func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, in
 	return challenges, page, totalPages, nil
 }
 
-func GetChallengeType(id string) (string, error) {
+func GetChallengeType(id string) (int, error) {
 	pool := database.GetPool()
-	var challengeType string
+	var challengeType int
 	err := pool.QueryRow(context.Background(),
-		"select type_id  from challenges where id = $1", id).Scan(&challengeType)
+		"select type_id from challenges where id = $1", id).Scan(&challengeType)
 	return challengeType, err
 }
 

@@ -36,7 +36,7 @@ func GetChallengeByIdHandler(c *gin.Context) {
 		return
 	}
 
-	if challengeType == "1" {
+	if challengeType == 1 {
 		dsaChallenge, err := repositories.GetDSAChallenge(id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
