@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/internal/handlers"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/handlers"
 	"github.com/gin-gonic/gin"
 )
 

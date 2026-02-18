@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/internal/config"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/config"
 	supa "github.com/supabase-community/supabase-go"
 )
 
