@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	config.Load()
+	config.Get()
 	database.Init()
 
 	app := server.NewRouter()

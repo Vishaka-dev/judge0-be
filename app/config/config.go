@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"sync"
 
@@ -18,22 +19,30 @@ var (
 	once sync.Once
 )
 
-func Load() *Config {
-	once.Do(func() {
-		godotenv.Load()
-
-		cfg = &Config{
-			SecretKey: os.Getenv("SECRET_KEY"),
-			Judge0API: os.Getenv("JUDGE0_API"),
-			PGURL:     os.Getenv("PG_URL"),
-		}
-	})
+func Get() *Config {
+	once.Do(load)
 	return cfg
 }
 
-func Get() *Config {
-	if cfg == nil {
-		return Load()
+func load() {
+	if os.Getenv("VERCEL") == "" {
+		_ = godotenv.Load()
+		log.Println("loaded .env file")
+	} else {
+		log.Println("Running on Vercel, skipping .env file")
 	}
-	return cfg
+
+	cfg = &Config{
+		SecretKey: must("SECRET_KEY"),
+		Judge0API: must("JUDGE0_API"),
+		PGURL:     must("PG_URL"),
+	}
+}
+
+func must(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		log.Fatalf("missing env var: %s", key)
+	}
+	return val
 }

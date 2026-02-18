@@ -14,7 +14,7 @@ var (
 )
 
 func init() {
-	config.Load()
+	config.Get()
 	database.Init()
 
 	app = gin.New()
