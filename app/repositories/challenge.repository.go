@@ -7,13 +7,16 @@ import (
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/database"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
 )
 
-func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, int64, int64, error) {
+func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.ChallengesPreviewType, int64, int64, error) {
 	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
 
 	var count int64
-	err := pool.QueryRow(context.Background(),
+	err := pool.QueryRow(ctx,
 		"select count(*) from preview_challenges_view").Scan(&count)
 	if err != nil {
 		log.Println("Error counting challenges:", err)
@@ -37,7 +40,7 @@ func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, in
 
 	offset := (page - 1) * ps
 
-	rows, err := pool.Query(context.Background(),
+	rows, err := pool.Query(ctx,
 		`select id, created_at, title, description, type_id, status_id, type, status
 		 from preview_challenges_view
 		 order by id desc
@@ -76,18 +79,22 @@ func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, in
 	return challenges, page, totalPages, nil
 }
 
-func GetChallengeType(id string) (int, error) {
+func GetChallengeType(ctx context.Context, id string) (int, error) {
 	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
 	var challengeType int
-	err := pool.QueryRow(context.Background(),
+	err := pool.QueryRow(ctx,
 		"select type_id from challenges where id = $1", id).Scan(&challengeType)
 	return challengeType, err
 }
 
-func GetDSAChallenge(id string) (types.DSAChallengesType, error) {
+func GetDSAChallenge(ctx context.Context, id string) (types.DSAChallengesType, error) {
 	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
 	var challenge types.DSAChallengesType
-	err := pool.QueryRow(context.Background(),
+	err := pool.QueryRow(ctx,
 		`select id, created_at, title, description, type_id, status_id, type, status,
 		 sample_input, sample_output, note
 		 from get_dsa_challenges_view where id = $1`, id).Scan(

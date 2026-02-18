@@ -8,9 +8,10 @@ import (
 )
 
 func GetAllChallengesHandler(c *gin.Context) {
+	ctx := c.Request.Context()
 	page := c.DefaultQuery("page", "1")
 	pageSize := c.DefaultQuery("pageSize", "10")
-	challenges, currentPage, totalPages, err := repositories.GetAllChallenges(page, pageSize)
+	challenges, currentPage, totalPages, err := repositories.GetAllChallenges(ctx, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -25,9 +26,10 @@ func GetAllChallengesHandler(c *gin.Context) {
 }
 
 func GetChallengeByIdHandler(c *gin.Context) {
+	ctx := c.Request.Context()
 	id := c.Param("id")
 
-	challengeType, err := repositories.GetChallengeType(id)
+	challengeType, err := repositories.GetChallengeType(ctx, id)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -37,7 +39,7 @@ func GetChallengeByIdHandler(c *gin.Context) {
 	}
 
 	if challengeType == 1 {
-		dsaChallenge, err := repositories.GetDSAChallenge(id)
+		dsaChallenge, err := repositories.GetDSAChallenge(ctx, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
