@@ -23,3 +23,36 @@ func GetAllChallengesHandler(c *gin.Context) {
 		"challenges":  challenges,
 	})
 }
+
+func GetChallengeByIdHandler(c *gin.Context) {
+	id := c.Param("id")
+
+	challengeType, err := repositories.GetChallengeType(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if challengeType == "1" {
+		dsaChallenge, err := repositories.GetDSAChallenge(id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"challenge": dsaChallenge,
+		})
+		return
+	}
+
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"error": "Challenge type not supported",
+	})
+
+}

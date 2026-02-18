@@ -9,5 +9,6 @@ func ChallengeRoutes(r *gin.RouterGroup) {
 	challenge := r.Group("/challenge")
 	{
 		challenge.GET("/get", handlers.GetAllChallengesHandler)
+		challenge.GET("/get/:id", handlers.GetChallengeByIdHandler)
 	}
 }

@@ -69,3 +69,33 @@ func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, in
 
 	return challenges, page, totalPages, nil
 }
+
+func GetChallengeType(id string) (string, error) {
+	pool := database.GetPool()
+	var challengeType string
+	err := pool.QueryRow(context.Background(),
+		"select type_id  from challenges where id = $1", id).Scan(&challengeType)
+	return challengeType, err
+}
+
+func GetDSAChallenge(id string) (types.DSAChallengesType, error) {
+	pool := database.GetPool()
+	var challenge types.DSAChallengesType
+	err := pool.QueryRow(context.Background(),
+		`select id, created_at, title, description, type_id, status_id, type, status,
+		 sample_input, sample_output, note
+		 from get_dsa_challenges_view where id = $1`, id).Scan(
+		&challenge.ID,
+		&challenge.CreatedAt,
+		&challenge.Title,
+		&challenge.Description,
+		&challenge.TypeID,
+		&challenge.StatusID,
+		&challenge.Type,
+		&challenge.Status,
+		&challenge.SampleInput,
+		&challenge.SampleOutput,
+		&challenge.Note,
+	)
+	return challenge, err
+}
