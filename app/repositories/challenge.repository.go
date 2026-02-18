@@ -38,7 +38,8 @@ func GetAllChallenges(limit, pageSize string) ([]types.ChallengesPreviewType, in
 	offset := (page - 1) * ps
 
 	rows, err := pool.Query(context.Background(),
-		`select * from preview_challenges_view
+		`select id, created_at, title, description, type_id, status_id, type, status
+		 from preview_challenges_view
 		 order by id desc
 		 limit $1 offset $2`,
 		ps, offset)
