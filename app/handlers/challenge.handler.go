@@ -8,7 +8,9 @@ import (
 )
 
 func GetAllChallengesHandler(c *gin.Context) {
-	challenges, err := repositories.GetAllChallenges()
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	challenges, currentPage, totalPages, err := repositories.GetAllChallenges(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -16,6 +18,8 @@ func GetAllChallengesHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"challenges": challenges,
+		"currentPage": currentPage,
+		"totalPages":  totalPages,
+		"challenges":  challenges,
 	})
 }
