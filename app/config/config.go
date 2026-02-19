@@ -12,6 +12,7 @@ type Config struct {
 	SecretKey string
 	Judge0API string
 	PGURL     string
+	AUTH_API  string
 }
 
 var (
@@ -36,6 +37,7 @@ func load() {
 		SecretKey: must("SECRET_KEY"),
 		Judge0API: must("JUDGE0_API"),
 		PGURL:     must("PG_URL"),
+		AUTH_API:  must("AUTH_API"),
 	}
 }
 

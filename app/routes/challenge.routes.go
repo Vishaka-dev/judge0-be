@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/handlers"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,6 +11,6 @@ func ChallengeRoutes(r *gin.RouterGroup) {
 	{
 		challenge.GET("/get", handlers.GetAllChallengesHandler)
 		challenge.GET("/get/:id", handlers.GetChallengeByIdHandler)
-		challenge.POST("/add", handlers.AddChallengeHandler)
+		challenge.POST("/add", middlewares.AuthMiddleware("admin"), handlers.AddChallengeHandler)
 	}
 }
