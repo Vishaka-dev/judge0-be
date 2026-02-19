@@ -10,7 +10,7 @@ import (
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
 )
 
-func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.ChallengesPreviewType, int64, int64, error) {
+func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.ChallengesType, int64, int64, error) {
 	pool := database.GetPool()
 	ctx, cancel := utils.WithTimeout(ctx)
 	defer cancel()
@@ -52,9 +52,9 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 	}
 	defer rows.Close()
 
-	challenges := []types.ChallengesPreviewType{}
+	challenges := []types.ChallengesType{}
 	for rows.Next() {
-		var challenge types.ChallengesPreviewType
+		var challenge types.ChallengesType
 		if err := rows.Scan(
 			&challenge.ID,
 			&challenge.CreatedAt,
@@ -111,4 +111,48 @@ func GetDSAChallenge(ctx context.Context, id string) (types.DSAChallengesType, e
 		&challenge.Note,
 	)
 	return challenge, err
+}
+
+func AddDSAChallenge(ctx context.Context, challenge types.AddDSAChallengeRequestType) (int, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	var challengeID int
+	err = tx.QueryRow(ctx,
+		`INSERT INTO challenges (title, description, type_id, status_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id`,
+		challenge.Title,
+		challenge.Description,
+		challenge.TypeID,
+		challenge.StatusID,
+	).Scan(&challengeID)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO dsa_challenges (challenge_id, sample_input, sample_output, note)
+         VALUES ($1, $2, $3, $4)`,
+		challengeID,
+		challenge.SampleInput,
+		challenge.SampleOutput,
+		challenge.Note,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+
+	return challengeID, nil
 }
