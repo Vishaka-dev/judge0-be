@@ -43,3 +43,19 @@ func ValidateAddDSAChallengeRequest(request types.AddDSAChallengeRequestType) er
 	}
 	return nil
 }
+
+func ValidateTestDSAChallengeRequest(request types.TestDSAChallengeRequestType) error {
+	if request.ChallengeID <= 0 {
+		return errors.New("challenge_id is required")
+	}
+	if request.SourceCode == "" {
+		return errors.New("source_code is required")
+	}
+	if request.Stdin == "" {
+		return errors.New("stdin is required")
+	}
+	if request.ExpectedOutput == "" {
+		return errors.New("expected_output is required")
+	}
+	return nil
+}

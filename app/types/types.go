@@ -41,3 +41,22 @@ type AddDSAChallengeRequestType struct {
 	SampleOutput string `json:"sample_output"`
 	Note         string `json:"note"`
 }
+
+type TestDSAChallengeRequestType struct {
+	ChallengeID    int    `json:"challenge_id"`
+	LanguageID     int    `json:"language_id"`
+	SourceCode     string `json:"source_code"`
+	Stdin          string `json:"stdin"`
+	ExpectedOutput string `json:"expected_output"`
+}
+type TestDSAChallengeResponse struct {
+	Stdout        string `json:"stdout"`
+	Stderr        string `json:"stderr"`
+	Token         string `json:"token"`
+	CompileOutput string `json:"compile_output"`
+	Message       string `json:"message"`
+	Status        struct {
+		StatusID          int    `json:"id"`
+		StatusDescription string `json:"description"`
+	} `json:"status"`
+}

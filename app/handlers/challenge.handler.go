@@ -41,7 +41,8 @@ func GetChallengeByIdHandler(c *gin.Context) {
 		return
 	}
 
-	if challengeType == 1 {
+	switch challengeType {
+	case 1:
 		dsaChallenge, err := repositories.GetDSAChallenge(ctx, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -106,5 +107,40 @@ func AddChallengeHandler(c *gin.Context) {
 
 	c.JSON(http.StatusBadRequest, gin.H{
 		"error": "Unsupported challenge type",
+	})
+}
+
+func TestDSAChallengeHandler(c *gin.Context) {
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot read body"})
+		return
+	}
+
+	var challenge types.TestDSAChallengeRequestType
+	if err := json.Unmarshal(body, &challenge); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+	if err := utils.ValidateTestDSAChallengeRequest(challenge); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+	byteResp, err := utils.TestDSAChallengeHandler(ctx, challenge)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var result types.TestDSAChallengeResponse
+	if err := json.Unmarshal(byteResp, &result); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid response from judge0"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"result": result,
 	})
 }

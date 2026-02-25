@@ -11,6 +11,7 @@ func ChallengeRoutes(r *gin.RouterGroup) {
 	{
 		challenge.GET("/get", handlers.GetAllChallengesHandler)
 		challenge.GET("/get/:id", handlers.GetChallengeByIdHandler)
-		challenge.POST("/add", middlewares.AuthMiddleware("admin"), handlers.AddChallengeHandler)
+		challenge.POST("/add", middlewares.AuthMiddleware("Subcommittee"), handlers.AddChallengeHandler)
+		challenge.POST("/test", middlewares.AuthMiddleware("Subcommittee"), handlers.TestDSAChallengeHandler)
 	}
 }
