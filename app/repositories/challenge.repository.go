@@ -66,7 +66,7 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 			&challenge.Status,
 		); err != nil {
 			log.Println("Scan Error:", err)
-			continue
+			return nil, 0, 0, err
 		}
 		challenges = append(challenges, challenge)
 	}
