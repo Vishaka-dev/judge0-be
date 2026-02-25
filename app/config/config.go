@@ -1,10 +1,10 @@
 package config
 
 import (
-	"log"
 	"os"
 	"sync"
 
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
 	"github.com/joho/godotenv"
 )
 
@@ -28,9 +28,9 @@ func Get() *Config {
 func load() {
 	if os.Getenv("VERCEL") == "" {
 		_ = godotenv.Load()
-		log.Println("loaded .env file")
+		logger.Log.Info("loaded .env file")
 	} else {
-		log.Println("Running on Vercel, skipping .env file")
+		logger.Log.Info("Running on Vercel, skipping .env file")
 	}
 
 	cfg = &Config{
@@ -44,7 +44,7 @@ func load() {
 func must(key string) string {
 	val := os.Getenv(key)
 	if val == "" {
-		log.Fatalf("missing env var: %s", key)
+		logger.Log.Fatal("missing env var", "key", key)
 	}
 	return val
 }

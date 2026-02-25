@@ -1,4 +1,4 @@
-package utils
+package logger
 
 import (
 	"fmt"
@@ -39,6 +39,11 @@ func (l *Logger) Warn(msg string, kv ...any) {
 
 func (l *Logger) Error(msg string, kv ...any) {
 	l.write("ERROR", msg, kv...)
+}
+
+func (l *Logger) Fatal(msg string, kv ...any) {
+	l.write("FATAL", msg, kv...)
+	os.Exit(1)
 }
 
 func (l *Logger) write(level, msg string, kv ...any) {
