@@ -140,6 +140,7 @@ func TestDSAChallengeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 		return
 	}
+
 	if err := utils.ValidateTestDSAChallengeRequest(challenge); err != nil {
 		logger.Log.Warn("Validation failed in TestDSAChallengeHandler", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -147,7 +148,7 @@ func TestDSAChallengeHandler(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	byteResp, err := utils.TestDSAChallengeHandler(ctx, challenge)
+	byteResp, err := utils.TestDSAChallenge(ctx, challenge)
 	if err != nil {
 		logger.Log.Error("Judge0 test submission failed", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -164,5 +165,49 @@ func TestDSAChallengeHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"result": result,
+	})
+}
+
+func SubmitDSAChallengeHandler(c *gin.Context) {
+
+	body, err := c.GetRawData()
+	if err != nil {
+		logger.Log.Warn("Failed to read request body in SubmitDSAChallengeHandler", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot read body"})
+		return
+	}
+
+	var challenge types.SubmitDSAChallengeRequestType
+	if err := json.Unmarshal(body, &challenge); err != nil {
+		logger.Log.Warn("Invalid JSON in SubmitDSAChallengeHandler", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+
+	if err := utils.ValidateSubmitDSAChallengeRequest(challenge); err != nil {
+		logger.Log.Warn("Validation failed in SubmitDSAChallengeHandler", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	testCases, err := repositories.GetDSAChallengeTestCases(c.Request.Context(), challenge.ChallengeID)
+	if err != nil {
+		logger.Log.Error("Failed to get DSA challenge test cases", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = utils.SubmitDSAChallenge(c, testCases, challenge)
+	if err != nil {
+		logger.Log.Error("Failed to submit DSA challenge", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	userEmail, _ := c.Get("user_email")
+	logger.Log.Info("Received request to submit DSA challenge solution", "user_email", userEmail)
+	submissionId := utils.GenerateSubmissionID()
+
+	c.JSON(http.StatusOK, gin.H{
+		"submission_id": submissionId,
 	})
 }

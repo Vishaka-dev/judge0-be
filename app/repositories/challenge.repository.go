@@ -170,3 +170,40 @@ func AddDSAChallenge(ctx context.Context, challenge types.AddDSAChallengeRequest
 	logger.Log.Info("DSA Challenge added", "challenge_id", challengeID)
 	return challengeID, nil
 }
+
+func GetDSAChallengeTestCases(ctx context.Context, challengeID int) ([]types.DSAChallengeTestCase, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	rows, err := pool.Query(ctx,
+		`SELECT id, challenge_id, test_input, test_output FROM dsa_test_cases WHERE challenge_id = $1 ORDER BY id ASC`,
+		challengeID,
+	)
+	if err != nil {
+		logger.Log.Error("GetDSAChallengeTestCases: query error", "challenge_id", challengeID, "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var testCases []types.DSAChallengeTestCase
+	for rows.Next() {
+		var tc types.DSAChallengeTestCase
+		if err := rows.Scan(
+			&tc.ID,
+			&tc.ChallengeID,
+			&tc.TestInput,
+			&tc.TestOutput,
+		); err != nil {
+			logger.Log.Error("GetDSAChallengeTestCases: scan error", "error", err)
+			return nil, err
+		}
+		testCases = append(testCases, tc)
+	}
+	if err := rows.Err(); err != nil {
+		logger.Log.Error("GetDSAChallengeTestCases: rows error", "error", err)
+		return nil, err
+	}
+	logger.Log.Info("Fetched DSA challenge test cases", "challenge_id", challengeID, "count", len(testCases))
+	return testCases, nil
+}

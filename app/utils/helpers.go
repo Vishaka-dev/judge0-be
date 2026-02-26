@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"encoding/base64"
 	"errors"
+	"math/rand"
+	"time"
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
@@ -73,4 +76,35 @@ func ValidateTestDSAChallengeRequest(request types.TestDSAChallengeRequestType) 
 		return errors.New("expected_output is required")
 	}
 	return nil
+}
+
+func ValidateSubmitDSAChallengeRequest(request types.SubmitDSAChallengeRequestType) error {
+	if request.ChallengeID <= 0 {
+		logger.Log.Warn("Validation failed: challenge_id is required", "request", request)
+		return errors.New("challenge_id is required")
+	}
+	if request.SourceCode == "" {
+		logger.Log.Warn("Validation failed: source_code is required", "request", request)
+		return errors.New("source_code is required")
+	}
+	if request.LanguageID <= 0 {
+		logger.Log.Warn("Validation failed: language_id is required", "request", request)
+		return errors.New("language_id is required")
+	}
+	return nil
+}
+
+func GenerateSubmissionID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 8
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func Base64Encode(input string) string {
+	return base64.StdEncoding.EncodeToString([]byte(input))
 }
