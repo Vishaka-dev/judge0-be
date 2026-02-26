@@ -2,10 +2,10 @@ package repositories
 
 import (
 	"context"
-	"log"
 	"strconv"
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/database"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
 )
@@ -19,17 +19,19 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 	err := pool.QueryRow(ctx,
 		"select count(*) from preview_challenges_view").Scan(&count)
 	if err != nil {
-		log.Println("Error counting challenges:", err)
+		logger.Log.Error("Error counting challenges", "error", err)
 		return nil, 0, 0, err
 	}
 
 	ps, err := strconv.ParseInt(pageSize, 10, 64)
 	if err != nil || ps <= 0 {
+		logger.Log.Warn("Invalid pageSize, defaulting to 10", "input", pageSize, "error", err)
 		ps = 10
 	}
 
 	page, err := strconv.ParseInt(limit, 10, 64)
 	if err != nil || page <= 0 {
+		logger.Log.Warn("Invalid limit, defaulting to 1", "input", limit, "error", err)
 		page = 1
 	}
 
@@ -42,12 +44,12 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 
 	rows, err := pool.Query(ctx,
 		`select id, created_at, title, description, type_id, status_id, type, status
-		 from preview_challenges_view
-		 order by id desc
-		 limit $1 offset $2`,
+			from preview_challenges_view
+			order by id desc
+			limit $1 offset $2`,
 		ps, offset)
 	if err != nil {
-		log.Println("Query Error:", err)
+		logger.Log.Error("Query Error", "error", err)
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
@@ -65,17 +67,18 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 			&challenge.Type,
 			&challenge.Status,
 		); err != nil {
-			log.Println("Scan Error:", err)
+			logger.Log.Error("Scan Error", "error", err)
 			return nil, 0, 0, err
 		}
 		challenges = append(challenges, challenge)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Println("Rows Error:", err)
+		logger.Log.Error("Rows Error", "error", err)
 		return nil, 0, 0, err
 	}
 
+	logger.Log.Info("Fetched challenges", "count", len(challenges), "page", page, "totalPages", totalPages)
 	return challenges, page, totalPages, nil
 }
 
@@ -86,6 +89,9 @@ func GetChallengeType(ctx context.Context, id string) (int, error) {
 	var challengeType int
 	err := pool.QueryRow(ctx,
 		"select type_id from challenges where id = $1", id).Scan(&challengeType)
+	if err != nil {
+		logger.Log.Error("GetChallengeType error", "id", id, "error", err)
+	}
 	return challengeType, err
 }
 
@@ -96,8 +102,8 @@ func GetDSAChallenge(ctx context.Context, id string) (types.DSAChallengesType, e
 	var challenge types.DSAChallengesType
 	err := pool.QueryRow(ctx,
 		`select id, created_at, title, description, type_id, status_id, type, status,
-		 sample_input, sample_output, note
-		 from get_dsa_challenges_view where id = $1`, id).Scan(
+			sample_input, sample_output, note
+			from get_dsa_challenges_view where id = $1`, id).Scan(
 		&challenge.ID,
 		&challenge.CreatedAt,
 		&challenge.Title,
@@ -110,6 +116,9 @@ func GetDSAChallenge(ctx context.Context, id string) (types.DSAChallengesType, e
 		&challenge.SampleOutput,
 		&challenge.Note,
 	)
+	if err != nil {
+		logger.Log.Error("GetDSAChallenge error", "id", id, "error", err)
+	}
 	return challenge, err
 }
 
@@ -120,6 +129,7 @@ func AddDSAChallenge(ctx context.Context, challenge types.AddDSAChallengeRequest
 
 	tx, err := pool.Begin(ctx)
 	if err != nil {
+		logger.Log.Error("AddDSAChallenge: begin transaction error", "error", err)
 		return 0, err
 	}
 	defer tx.Rollback(ctx)
@@ -127,32 +137,36 @@ func AddDSAChallenge(ctx context.Context, challenge types.AddDSAChallengeRequest
 	var challengeID int
 	err = tx.QueryRow(ctx,
 		`INSERT INTO challenges (title, description, type_id, status_id)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id`,
+			VALUES ($1, $2, $3, $4)
+			RETURNING id`,
 		challenge.Title,
 		challenge.Description,
 		challenge.TypeID,
 		challenge.StatusID,
 	).Scan(&challengeID)
 	if err != nil {
+		logger.Log.Error("AddDSAChallenge: insert challenge error", "error", err)
 		return 0, err
 	}
 
 	_, err = tx.Exec(ctx,
 		`INSERT INTO dsa_challenges (challenge_id, sample_input, sample_output, note)
-         VALUES ($1, $2, $3, $4)`,
+			VALUES ($1, $2, $3, $4)`,
 		challengeID,
 		challenge.SampleInput,
 		challenge.SampleOutput,
 		challenge.Note,
 	)
 	if err != nil {
+		logger.Log.Error("AddDSAChallenge: insert dsa_challenge error", "error", err)
 		return 0, err
 	}
 
 	if err = tx.Commit(ctx); err != nil {
+		logger.Log.Error("AddDSAChallenge: commit error", "error", err)
 		return 0, err
 	}
 
+	logger.Log.Info("DSA Challenge added", "challenge_id", challengeID)
 	return challengeID, nil
 }
