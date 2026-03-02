@@ -207,3 +207,29 @@ func GetDSAChallengeTestCases(ctx context.Context, challengeID int) ([]types.DSA
 	logger.Log.Info("Fetched DSA challenge test cases", "challenge_id", challengeID, "count", len(testCases))
 	return testCases, nil
 }
+
+func GetDSATestCaseCount(ctx context.Context, challengeID int) (int64, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	var count int64
+	err := pool.QueryRow(ctx,
+		"SELECT COUNT(*) FROM dsa_test_cases WHERE challenge_id = $1", challengeID).Scan(&count)
+	return count, err
+}
+
+func AddDSASubmission(ctx context.Context, submissionId string, challengeId int, userId string, testCount int) (bool, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	_, err := pool.Exec(ctx,
+		`INSERT INTO dsa_submissions (submission_id, challenge_id, user_id,test_count) VALUES ($1, $2, $3,$4)`,
+		submissionId, challengeId, userId, testCount,
+	)
+
+	if err != nil {
+		logger.Log.Error("AddDSASubmission: insert error", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+	return true, nil
+}

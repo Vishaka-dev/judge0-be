@@ -204,8 +204,18 @@ func SubmitDSAChallengeHandler(c *gin.Context) {
 	}
 
 	userEmail, _ := c.Get("user_email")
-	logger.Log.Info("Received request to submit DSA challenge solution", "user_email", userEmail)
+	userId, _ := c.Get("user_id")
+	logger.Log.Info("Received request to submit DSA challenge solution", "user_email", userEmail, "user_id", userId)
 	submissionId := utils.GenerateSubmissionID()
+	ctx := c.Request.Context()
+	testCount, err := repositories.GetDSATestCaseCount(ctx, challenge.ChallengeID)
+
+	if err != nil {
+		logger.Log.Error("Failed to get DSA test case count", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	repositories.AddDSASubmission(ctx, submissionId, challenge.ChallengeID, userId.(string), int(testCount))
 
 	c.JSON(http.StatusOK, gin.H{
 		"submission_id": submissionId,
