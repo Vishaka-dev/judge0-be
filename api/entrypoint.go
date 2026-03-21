@@ -3,7 +3,9 @@ package api
 import (
 	"net/http"
 
-	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/routes"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/config"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/database"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/routes"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +14,9 @@ var (
 )
 
 func init() {
+	config.Get()
+	database.Init()
+
 	app = gin.New()
 	app.Use(gin.Logger(), gin.Recovery())
 	api := app.Group("/api")
