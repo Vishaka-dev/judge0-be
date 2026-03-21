@@ -1,123 +1,134 @@
-openapi: 3.0.3
+openapi: 3.1.0
+x-stoplight:
+  id: znhuznzkvtirz
 info:
-  title: Sample API
-  description: Judge0 Backend API Documentation
-  version: 1.0.0
-
+  title: Judge0 API
+  version: "1.0"
 servers:
-  - url: https://judge0-be.vercel.app
-    description: API of Judge0 Backend
-
+  - url: "http://localhost:3000/api"
 paths:
   /challenge/get:
     get:
+      summary: Get Challenges
       tags:
-        - Challenge
-      summary: Returns a paginated list of challenges
-      description: Fetches all coding challenges with pagination support
-      parameters:
-        - name: page
-          in: query
-          required: false
-          description: Page number to fetch (default is 1)
-          schema:
-            type: integer
-            default: 1
-        - name: pageSize
-          in: query
-          required: false
-          description: Number of challenges per page (default is 10)
-          schema:
-            type: integer
-            default: 10
+        - challenges
       responses:
         "200":
-          description: List of challenges
+          description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   currentPage:
-                    type: integer
+                    type: number
+                    x-stoplight:
+                      id: o11js6i9eg4ph
                     example: 1
                   totalPages:
-                    type: integer
-                    example: 1
+                    type: string
+                    x-stoplight:
+                      id: 8sj3umnuyeuxc
+                    example: "1"
                   challenges:
                     type: array
+                    x-stoplight:
+                      id: 3b1h9efo4vqtc
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 1
-                        created_at:
-                          type: string
-                          format: date-time
-                          example: "2026-02-18 12:40:43.186892+00"
-                        title:
-                          type: string
-                          example: "Merge Intervals"
-                        description:
-                          type: string
-                          example: "Given a collection of intervals, merge all overlapping intervals and return the result."
-                        type_id:
-                          type: integer
-                          example: 1
-                        status_id:
-                          type: integer
-                          example: 1
-                        type:
-                          type: string
-                          example: "DSA"
-                        status:
-                          type: string
-                          example: "INACTIVE"
-        "500":
-          description: Could not fetch challenges
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "could not fetch challenges"
-        default:
-          description: Unexpected error
-
-  /challenge/get/{id}:
-    get:
-      tags:
-        - Challenge
-      summary: Returns a challenge by ID
-      description: Fetches details of a coding challenge by its unique ID
+                      $ref: "#/components/schemas/Challenge"
+                      x-stoplight:
+                        id: 45prib8zhecd1
+      operationId: get-challenge-get
+      x-stoplight:
+        id: 3m8v2hzcxmttl
+      description: Get all challenges
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: The unique identifier of the challenge
-          schema:
-            type: integer
-            example: 1
+        - schema:
+            type: number
+            example: 2
+            default: 1
+          in: query
+          name: page
+          description: number of the current page
+          allowEmptyValue: true
+        - schema:
+            type: number
+            example: 20
+            default: 10
+          in: query
+          name: pageSize
+          description: challenges per page
+          allowEmptyValue: true
+  "/challenge/get/{id}":
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+        description: ID of the challenge
+    get:
+      summary: Get Challenge By ID
+      tags:
+        - challenges
       responses:
         "200":
-          description: Challenge found
+          description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   challenge:
-                    oneOf:
+                    x-stoplight:
+                      id: 65kv5s29d64sj
+                    anyOf:
                       - $ref: "#/components/schemas/DSAChallenge"
-                    discriminator:
-                      propertyName: type
-                      mapping:
-                        DSA: "#/components/schemas/DSAChallenge"
-        "404":
-          description: Challenge not found
+              examples:
+                Example 1:
+                  value:
+                    challenge:
+                      id: 6
+                      created_at: "2026-02-26 08:28:44.387427+00"
+                      title: Reverse an Array
+                      description: "Given an array of integers, reverse the array and print it."
+                      type_id: 1
+                      status_id: 1
+                      type: DSA
+                      status: INACTIVE
+                      sample_input: "5\r\n1 2 3 4 5"
+                      sample_output: 5 4 3 2 1
+                      note: null
+      operationId: get-challenge-get-id
+      x-stoplight:
+        id: qxf3822clw6mt
+      description: GET Challenge BY ID
+  /challenge/add:
+    post:
+      summary: Add Challenge
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  message:
+                    type: string
+                x-examples:
+                  Example 1:
+                    id: 9
+                    message: DSA challenge created successfully
+              examples:
+                Example 1:
+                  value:
+                    id: 0
+                    message: string
+        "400":
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -125,9 +136,15 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Challenge not found"
-        "500":
-          description: Internal server error
+                x-examples:
+                  Example 1:
+                    error: marks is required
+              examples:
+                Example 1:
+                  value:
+                    error: string
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -135,50 +152,326 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "internal server error"
-        default:
-          description: Unexpected error
-
+                x-examples:
+                  Example 1:
+                    error: authorization header is required
+              examples:
+                Example 1:
+                  value:
+                    error: string
+      operationId: post-challenge-add
+      x-stoplight:
+        id: 2jjsyd9wcgg2m
+      tags:
+        - challenges
+      description: Add Challenge
+      parameters:
+        - $ref: "#/components/parameters/Auth-Header"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/AddDSAChallengeRequest"
+            examples:
+              Example 1:
+                value:
+                  title: string
+                  description: string
+                  type_id: 0
+                  status_id: 0
+                  sample_input: string
+                  sample_output: string
+                  note: string
+                  test_cases:
+                    - test_input: string
+                      test_output: string
+  /challenge/test:
+    post:
+      summary: Test Challenge
+      tags:
+        - challenges
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      stdout:
+                        type: string
+                      stderr:
+                        type: string
+                      token:
+                        type: string
+                      compile_output:
+                        type: string
+                      message:
+                        type: string
+                      status:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          description:
+                            type: string
+                x-examples:
+                  Example 1:
+                    result:
+                      stdout: ""
+                      stderr: |
+                        script.sh: line 1: echos: command not found
+                      token: c056a7ae-2ba8-4928-ac16-b725cd78bb13
+                      compile_output: ""
+                      message: Exited with error status 127
+                      status:
+                        id: 11
+                        description: Runtime Error (NZEC)
+              examples:
+                Example 1:
+                  value:
+                    result:
+                      stdout: string
+                      stderr: string
+                      token: string
+                      compile_output: string
+                      message: string
+                      status:
+                        id: 0
+                        description: string
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                x-examples:
+                  Example 1:
+                    error: challenge_id is required
+              examples:
+                Example 1:
+                  value:
+                    error: challenge_id is required
+      operationId: get-challenge-test
+      x-stoplight:
+        id: p4qwviwv8lail
+      parameters:
+        - $ref: "#/components/parameters/Auth-Header"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestChallengeRequest"
+            examples:
+              Example 1:
+                value:
+                  challenge_id: 0
+                  language_id: 0
+                  source_code: string
+                  stdin: string
+                  expected_output: string
 components:
   schemas:
-    DSAChallenge:
+    Challenge:
       type: object
-      required:
-        - id
-        - title
-        - type
       properties:
         id:
           type: integer
-          example: 1
         created_at:
           type: string
-          format: date-time
-          example: "2026-02-18 12:40:43.186892+00"
         title:
           type: string
-          example: "Merge Intervals"
         description:
           type: string
-          example: "Given a collection of intervals, merge all overlapping intervals and return the result."
         type_id:
           type: integer
-          example: 1
         status_id:
           type: integer
-          example: 1
         type:
           type: string
-          example: "DSA"
         status:
           type: string
-          example: "ACTIVE"
+      x-examples:
+        Example 1:
+          id: 1
+          created_at: "2026-02-18 12:40:43.186892+00"
+          title: Merge Intervals
+          description: "Given a collection of intervals, merge all overlapping intervals and return the result."
+          type_id: 1
+          status_id: 1
+          type: DSA
+          status: INACTIVE
+      examples:
+        - id: 1
+          created_at: "2026-02-18 12:40:43.186892+00"
+          title: Merge Intervals
+          description: "Given a collection of intervals, merge all overlapping intervals and return the result."
+          type_id: 1
+          status_id: 1
+          type: DSA
+          status: INACTIVE
+      title: ""
+    DSAChallenge:
+      type: object
+      x-stoplight:
+        id: 8bf98d55de70b
+      properties:
+        id:
+          type: integer
+        created_at:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        type_id:
+          type: integer
+        status_id:
+          type: integer
+        type:
+          type: string
+        status:
+          type: string
         sample_input:
           type: string
-          example: "[[1,2],[2,3]]"
         sample_output:
           type: string
-          example: "[[1,3]]"
+        note:
+          type: "null"
+      x-examples:
+        Example 1:
+          id: 6
+          created_at: "2026-02-26 08:28:44.387427+00"
+          title: Reverse an Array
+          description: "Given an array of integers, reverse the array and print it."
+          type_id: 1
+          status_id: 1
+          type: DSA
+          status: INACTIVE
+          sample_input: "5\r\n1 2 3 4 5"
+          sample_output: 5 4 3 2 1
+          note: null
+      examples:
+        - id: 6
+          created_at: "2026-02-26 08:28:44.387427+00"
+          title: Reverse an Array
+          description: "Given an array of integers, reverse the array and print it."
+          type_id: 1
+          status_id: 1
+          type: DSA
+          status: INACTIVE
+          sample_input: "5\r\n1 2 3 4 5"
+          sample_output: 5 4 3 2 1
+          note: null
+    AddDSAChallengeRequest:
+      type: object
+      x-stoplight:
+        id: 16d334a11e153
+      x-examples:
+        Example 1:
+          title: Merge Intervals
+          description: "Given a collection of intervals, merge all overlapping intervals and return the result."
+          type_id: 1
+          status_id: 1
+          sample_input: "[[1,3],[2,6],[8,10],[15,18]]"
+          sample_output: "[[1,6],[8,10],[15,18]]"
+          note: |-
+            * [1,3] overlaps with [2,6]
+            * They merge into [1,6]
+            * The others do not overlap
+          test_cases:
+            - test_input: "[[1,3],[2,6],[8,10],[15,18]]"
+              test_output: "[[1,6],[8,10],[15,18]]"
+            - test_input: "[[1,4],[4,5]]"
+              test_output: "[[1,5]]"
+      examples:
+        - title: string
+          description: string
+          type_id: 0
+          status_id: 0
+          sample_input: string
+          sample_output: string
+          note: string
+          test_cases:
+            - test_input: string
+              test_output: string
+      required:
+        - title
+        - description
+        - type_id
+        - status_id
+        - sample_input
+        - sample_output
+        - test_cases
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        type_id:
+          type: integer
+        status_id:
+          type: integer
+        sample_input:
+          type: string
+        sample_output:
+          type: string
         note:
           type: string
-          example: "This is a classic interval merging problem"
+        test_cases:
+          type: array
+          items:
+            type: object
+            required:
+              - test_input
+              - test_output
+            properties:
+              test_input:
+                type: string
+              test_output:
+                type: string
+    TestChallengeRequest:
+      type: object
+      x-examples:
+        Example 1:
+          challenge_id: 1
+          language_id: 46
+          source_code: echos hello
+          stdin: " "
+          expected_output: hello
+      required:
+        - challenge_id
+        - language_id
+        - source_code
+        - stdin
+        - expected_output
+      properties:
+        challenge_id:
+          type: integer
+        language_id:
+          type: integer
+        source_code:
+          type: string
+          description: Should be `base64` encoded
+        stdin:
+          type: string
+          description: Should be `base64` encoded
+        expected_output:
+          type: string
+          description: Should be `base64` encoded
+  parameters:
+    Auth-Header:
+      name: Authorization
+      in: header
+      required: true
+      schema:
+        type: string
+        example: Bearer <token>
+      description: Authorization Header
