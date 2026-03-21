@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/routes"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/routes"
 	"github.com/gin-gonic/gin"
 )
 
