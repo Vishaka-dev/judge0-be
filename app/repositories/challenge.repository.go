@@ -233,3 +233,31 @@ func AddDSASubmission(ctx context.Context, submissionId string, challengeId int,
 	}
 	return true, nil
 }
+
+func UpdateDSASubmission(ctx context.Context, submissionId string, payload types.TestDSAChallengeResponse) (bool, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	if payload.Status.StatusID == 3 {
+		_, err := pool.Exec(ctx,
+			`UPDATE dsa_submissions SET pass_count = pass_count + 1 WHERE submission_id = $1`,
+			submissionId,
+		)
+		if err != nil {
+			logger.Log.Error("UpdateDSASubmission: update error", "submission_id", submissionId, "error", err)
+			return false, err
+		}
+	} else if payload.Status.StatusID == 4 {
+		_, err := pool.Exec(ctx,
+			`UPDATE dsa_submissions SET fail_count = fail_count + 1 WHERE submission_id = $1`,
+			submissionId,
+		)
+		if err != nil {
+			logger.Log.Error("UpdateDSASubmission: update error", "submission_id", submissionId, "error", err)
+			return false, err
+		}
+	}
+
+	return true, nil
+}

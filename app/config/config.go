@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	SecretKey string
-	Judge0API string
-	PGURL     string
-	AUTH_API  string
+	SecretKey         string
+	Judge0API         string
+	PGURL             string
+	AUTH_API          string
+	Judge0CallbackURL string
 }
 
 var (
@@ -34,10 +35,11 @@ func load() {
 	}
 
 	cfg = &Config{
-		SecretKey: must("SECRET_KEY"),
-		Judge0API: must("JUDGE0_API"),
-		PGURL:     must("PG_URL"),
-		AUTH_API:  must("AUTH_API"),
+		SecretKey:         must("SECRET_KEY"),
+		Judge0API:         must("JUDGE0_API"),
+		PGURL:             must("PG_URL"),
+		AUTH_API:          must("AUTH_API"),
+		Judge0CallbackURL: must("JUDGE0_CALLBACK_URL"),
 	}
 }
 

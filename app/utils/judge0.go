@@ -60,13 +60,13 @@ func TestDSAChallenge(ctx context.Context, payload any) ([]byte, error) {
 	logger.Log.Info("Judge0 submission successful", "status", resp.StatusCode)
 	return respBody, nil
 }
-func SubmitDSAChallenge(ctx context.Context, testCases []types.DSAChallengeTestCase, payload types.SubmitDSAChallengeRequestType) (bool, error) {
+func SubmitDSAChallenge(ctx context.Context, testCases []types.DSAChallengeTestCase, payload types.SubmitDSAChallengeRequestType, submissionId string) (bool, error) {
 	submissions := make([]types.Judge0SubmissionRequest, len(testCases))
 	for i, tc := range testCases {
 		submissions[i] = types.Judge0SubmissionRequest{
 			LanguageID:     payload.LanguageID,
 			SourceCode:     payload.SourceCode,
-			CallbackURL:    "https://webhook.site/74e67551-b71a-437e-97dd-696340c70efd",
+			CallbackURL:    config.Get().Judge0CallbackURL + "/" + submissionId,
 			Stdin:          Base64Encode(tc.TestInput),
 			ExpectedOutput: Base64Encode(tc.TestOutput),
 		}

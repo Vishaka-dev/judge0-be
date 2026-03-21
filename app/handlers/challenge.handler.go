@@ -171,6 +171,12 @@ func TestDSAChallengeHandler(c *gin.Context) {
 func SubmitDSAChallengeHandler(c *gin.Context) {
 
 	body, err := c.GetRawData()
+	submissionId := utils.GenerateSubmissionID()
+	userEmail, _ := c.Get("user_email")
+	userId, _ := c.Get("user_id")
+	logger.Log.Info("Received request to submit DSA challenge solution", "user_email", userEmail, "user_id", userId)
+	ctx := c.Request.Context()
+
 	if err != nil {
 		logger.Log.Warn("Failed to read request body in SubmitDSAChallengeHandler", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot read body"})
@@ -196,28 +202,46 @@ func SubmitDSAChallengeHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = utils.SubmitDSAChallenge(c, testCases, challenge)
+	_, err = utils.SubmitDSAChallenge(c, testCases, challenge, submissionId)
 	if err != nil {
 		logger.Log.Error("Failed to submit DSA challenge", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	userEmail, _ := c.Get("user_email")
-	userId, _ := c.Get("user_id")
-	logger.Log.Info("Received request to submit DSA challenge solution", "user_email", userEmail, "user_id", userId)
-	submissionId := utils.GenerateSubmissionID()
-	ctx := c.Request.Context()
-	testCount, err := repositories.GetDSATestCaseCount(ctx, challenge.ChallengeID)
-
 	if err != nil {
 		logger.Log.Error("Failed to get DSA test case count", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	testCount, err := repositories.GetDSATestCaseCount(ctx, challenge.ChallengeID)
 	repositories.AddDSASubmission(ctx, submissionId, challenge.ChallengeID, userId.(string), int(testCount))
 
 	c.JSON(http.StatusOK, gin.H{
 		"submission_id": submissionId,
 	})
+}
+
+func EvaluateDSAChallengeHandler(c *gin.Context) {
+	submissionId := c.Param("id")
+	body, err := c.GetRawData()
+	if err != nil {
+		logger.Log.Error("Failed to read Judge0 callback body", "submission_id", submissionId, "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot read callback body"})
+		return
+	}
+	var result types.TestDSAChallengeResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		logger.Log.Warn("Invalid JSON in EvaluateDSAChallengeHandler", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+	status, err := repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
+	if err != nil {
+		logger.Log.Error("Failed to update DSA submission", "submission_id", submissionId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	logger.Log.Info("DSA submission updated", "submission_id", submissionId, "status", status)
 }

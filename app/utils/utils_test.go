@@ -32,7 +32,7 @@ func TestSubmitDSAChallenge(t *testing.T) {
 		SourceCode:  "print('Hello, World!')",
 		LanguageID:  71,
 	}
-	utils.SubmitDSAChallenge(context.Background(), testCases, payload)
+	utils.SubmitDSAChallenge(context.Background(), testCases, payload, utils.GenerateSubmissionID())
 }
 
 func TestBase64Encode(t *testing.T) {
