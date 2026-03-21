@@ -34,14 +34,14 @@ type DSAChallengesType struct {
 }
 
 type AddDSAChallengeRequestType struct {
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	TypeID       int     `json:"type_id"`
-	StatusID     int     `json:"status_id"`
-	Marks        int     `json:"marks"`
-	SampleInput  string  `json:"sample_input"`
-	SampleOutput string  `json:"sample_output"`
-	Note         *string `json:"note"`
+	Title        string            `json:"title"`
+	Description  string            `json:"description"`
+	TypeID       int               `json:"type_id"`
+	StatusID     int               `json:"status_id"`
+	Marks        int               `json:"marks"`
+	SampleInput  string            `json:"sample_input"`
+	SampleOutput string            `json:"sample_output"`
+	Note         *string           `json:"note"`
 	TestCases    []DSATestCaseType `json:"test_cases"`
 }
 
