@@ -136,13 +136,14 @@ func AddDSAChallenge(ctx context.Context, challenge types.AddDSAChallengeRequest
 
 	var challengeID int
 	err = tx.QueryRow(ctx,
-		`INSERT INTO challenges (title, description, type_id, status_id)
-			VALUES ($1, $2, $3, $4)
+		`INSERT INTO challenges (title, description, type_id, status_id, marks)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id`,
 		challenge.Title,
 		challenge.Description,
 		challenge.TypeID,
 		challenge.StatusID,
+		challenge.Marks,
 	).Scan(&challengeID)
 	if err != nil {
 		logger.Log.Error("AddDSAChallenge: insert challenge error", "error", err)
@@ -160,6 +161,20 @@ func AddDSAChallenge(ctx context.Context, challenge types.AddDSAChallengeRequest
 	if err != nil {
 		logger.Log.Error("AddDSAChallenge: insert dsa_challenge error", "error", err)
 		return 0, err
+	}
+
+	for _, testCase := range challenge.TestCases {
+		_, err = tx.Exec(ctx,
+			`INSERT INTO dsa_test_cases (challenge_id, test_input, test_output)
+				VALUES ($1, $2, $3)`,
+			challengeID,
+			testCase.TestInput,
+			testCase.TestOutput,
+		)
+		if err != nil {
+			logger.Log.Error("AddDSAChallenge: insert dsa_test_case error", "challenge_id", challengeID, "error", err)
+			return 0, err
+		}
 	}
 
 	if err = tx.Commit(ctx); err != nil {

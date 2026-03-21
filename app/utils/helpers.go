@@ -3,7 +3,9 @@ package utils
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
@@ -27,6 +29,10 @@ func ValidateAddChallengeRequest(request types.AddChallengeRequestType) error {
 		logger.Log.Warn("Validation failed: status_id is required", "request", request)
 		return errors.New("status_id is required")
 	}
+	if request.Marks <= 0 {
+		logger.Log.Warn("Validation failed: marks is required", "request", request)
+		return errors.New("marks is required")
+	}
 	return nil
 }
 
@@ -47,6 +53,10 @@ func ValidateAddDSAChallengeRequest(request types.AddDSAChallengeRequestType) er
 		logger.Log.Warn("Validation failed: status_id is required", "request", request)
 		return errors.New("status_id is required")
 	}
+	if request.Marks <= 0 {
+		logger.Log.Warn("Validation failed: marks is required", "request", request)
+		return errors.New("marks is required")
+	}
 	if request.SampleInput == "" {
 		logger.Log.Warn("Validation failed: sample_input is required", "request", request)
 		return errors.New("sample_input is required")
@@ -54,6 +64,21 @@ func ValidateAddDSAChallengeRequest(request types.AddDSAChallengeRequestType) er
 	if request.SampleOutput == "" {
 		logger.Log.Warn("Validation failed: sample_output is required", "request", request)
 		return errors.New("sample_output is required")
+	}
+	if len(request.TestCases) == 0 {
+		logger.Log.Warn("Validation failed: test_cases is required", "request", request)
+		return errors.New("test_cases is required")
+	}
+
+	for i, testCase := range request.TestCases {
+		if strings.TrimSpace(testCase.TestInput) == "" {
+			logger.Log.Warn("Validation failed: test case input is required", "index", i)
+			return fmt.Errorf("test_cases[%d].test_input is required", i)
+		}
+		if strings.TrimSpace(testCase.TestOutput) == "" {
+			logger.Log.Warn("Validation failed: test case output is required", "index", i)
+			return fmt.Errorf("test_cases[%d].test_output is required", i)
+		}
 	}
 	return nil
 }
