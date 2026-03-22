@@ -1,5 +1,11 @@
 package types
 
+type RegisterUserRequestType struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	Name   string `json:"name"`
+}
+
 type ChallengesType struct {
 	ID          int    `json:"id"`
 	CreatedAt   string `json:"created_at"`
