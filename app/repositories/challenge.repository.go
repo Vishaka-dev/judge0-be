@@ -119,6 +119,10 @@ func GetChallengeIDBySubmissionID(ctx context.Context, submissionId string) (int
 	defer cancel()
 	var challengeId int
 	err := pool.QueryRow(ctx, "SELECT challenge_id FROM dsa_submissions WHERE submission_id = $1", submissionId).Scan(&challengeId)
+	if err != nil {
+		logger.Log.Error("GetChallengeIDBySubmissionID: query error", "submission_id", submissionId, "error", err)
+		return 0, err
+	}
 	return challengeId, err
 }
 
@@ -129,11 +133,16 @@ func GetUserIDBySubmissionID(ctx context.Context, submissionId string) (string, 
 
 	var userID string
 	err := pool.QueryRow(ctx, "SELECT user_id FROM dsa_submissions WHERE submission_id = $1", submissionId).Scan(&userID)
+	if err != nil {
+		logger.Log.Error("GetUserIDBySubmissionID: query error", "submission_id", submissionId, "error", err)
+		return "", err
+	}
 	return userID, err
 }
 
 func AddMarksToLeaderboard(ctx context.Context, userID string, marks int) error {
 	if marks <= 0 {
+		logger.Log.Info("AddMarksToLeaderboard: skipped non-positive marks", "user_id", userID, "marks", marks)
 		return nil
 	}
 
@@ -147,6 +156,7 @@ func AddMarksToLeaderboard(ctx context.Context, userID string, marks int) error 
 		marks,
 	)
 	if err != nil {
+		logger.Log.Error("AddMarksToLeaderboard: update error", "user_id", userID, "marks", marks, "error", err)
 		return err
 	}
 
@@ -157,9 +167,14 @@ func AddMarksToLeaderboard(ctx context.Context, userID string, marks int) error 
 			marks,
 		)
 		if err != nil {
+			logger.Log.Error("AddMarksToLeaderboard: insert error", "user_id", userID, "marks", marks, "error", err)
 			return err
 		}
+		logger.Log.Info("AddMarksToLeaderboard: leaderboard row created", "user_id", userID, "marks_added", marks)
+		return nil
 	}
+
+	logger.Log.Info("AddMarksToLeaderboard: leaderboard marks updated", "user_id", userID, "marks_added", marks)
 
 	return nil
 }
@@ -327,6 +342,10 @@ func GetDSASubmissionCount(ctx context.Context, submissionId string) (int64, err
 	defer cancel()
 	var count int64
 	err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM dsa_submission_results WHERE submission_id = $1", submissionId).Scan(&count)
+	if err != nil {
+		logger.Log.Error("GetDSASubmissionCount: query error", "submission_id", submissionId, "error", err)
+		return 0, err
+	}
 	return count, err
 }
 
@@ -359,6 +378,10 @@ func GetPassDSASubmissionCount(ctx context.Context, submissionId string) (int64,
 	defer cancel()
 	var count int64
 	err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM dsa_submission_results WHERE submission_id = $1 AND status = 2", submissionId).Scan(&count)
+	if err != nil {
+		logger.Log.Error("GetPassDSASubmissionCount: query error", "submission_id", submissionId, "error", err)
+		return 0, err
+	}
 	return count, err
 }
 
@@ -366,6 +389,7 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 	pool := database.GetPool()
 	ctx, cancel := utils.WithTimeout(ctx)
 	defer cancel()
+	logger.Log.Info("AddDSASubmissionResult: processing callback", "submission_id", submissionId, "token", payload.Token, "judge0_status_id", payload.Status.StatusID)
 
 	if payload.Token == "" {
 		err := errors.New("missing callback token")
@@ -410,6 +434,8 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 		return false, err
 	}
 
+	logger.Log.Info("AddDSASubmissionResult: callback persisted", "submission_id", submissionId, "token", payload.Token, "mapped_status", status)
+
 	return true, nil
 }
 
@@ -417,6 +443,7 @@ func UpdateDSASubmission(ctx context.Context, submissionId string, payload types
 	pool := database.GetPool()
 	ctx, cancel := utils.WithTimeout(ctx)
 	defer cancel()
+	logger.Log.Info("UpdateDSASubmission: evaluating submission", "submission_id", submissionId, "token", payload.Token)
 
 	if payload.Token == "" {
 		err := errors.New("missing callback token")
@@ -440,8 +467,10 @@ func UpdateDSASubmission(ctx context.Context, submissionId string, payload types
 		logger.Log.Error("UpdateDSASubmission: failed to get submission count", "submission_id", submissionId, "error", err)
 		return false, err
 	}
+	logger.Log.Info("UpdateDSASubmission: submission progress", "submission_id", submissionId, "received_results", submissionCount, "expected_results", testCount)
 
 	if submissionCount < testCount {
+		logger.Log.Info("UpdateDSASubmission: waiting for more callbacks", "submission_id", submissionId, "remaining", testCount-submissionCount)
 		return true, nil
 	}
 
@@ -456,6 +485,7 @@ func UpdateDSASubmission(ctx context.Context, submissionId string, payload types
 	if passCount >= testCount {
 		evaluationStatus = 2
 	}
+	logger.Log.Info("UpdateDSASubmission: computed aggregate", "submission_id", submissionId, "pass_count", passCount, "fail_count", failCount, "evaluation_status", evaluationStatus)
 
 	_, err = pool.Exec(ctx,
 		`UPDATE dsa_submissions
@@ -472,6 +502,8 @@ func UpdateDSASubmission(ctx context.Context, submissionId string, payload types
 		logger.Log.Error("UpdateDSASubmission: failed to update submission aggregates", "submission_id", submissionId, "error", err)
 		return false, err
 	}
+
+	logger.Log.Info("UpdateDSASubmission: submission aggregate updated", "submission_id", submissionId, "pass_count", passCount, "fail_count", failCount, "evaluation_status", evaluationStatus)
 
 	return true, nil
 
