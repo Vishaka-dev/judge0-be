@@ -237,11 +237,19 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 		return
 	}
-	status, err := repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
+	status, err := repositories.AddDSASubmissionResult(c.Request.Context(), submissionId, result)
 	if err != nil {
 		logger.Log.Error("Failed to update DSA submission", "submission_id", submissionId, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	_, err = repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
+	if err != nil {
+		logger.Log.Error("Failed to finalize DSA submission", "submission_id", submissionId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	logger.Log.Info("DSA submission updated", "submission_id", submissionId, "status", status)
 }

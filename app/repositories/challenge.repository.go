@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/database"
@@ -96,6 +97,74 @@ func GetChallengeType(ctx context.Context, id string) (int, error) {
 	}
 	return challengeType, err
 }
+
+func GetMarksForChallenge(ctx context.Context, challengeId int) (int, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	var marks int
+	err := pool.QueryRow(ctx,
+		`SELECT marks FROM challenges WHERE id = $1`, challengeId).Scan(&marks)
+	if err != nil {
+		logger.Log.Error("GetMarksForChallenge: query error", "challenge_id", challengeId, "error", err)
+		return 0, err
+	}
+	return marks, nil
+}
+
+func GetChallengeIDBySubmissionID(ctx context.Context, submissionId string) (int, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	var challengeId int
+	err := pool.QueryRow(ctx, "SELECT challenge_id FROM dsa_submissions WHERE submission_id = $1", submissionId).Scan(&challengeId)
+	return challengeId, err
+}
+
+func GetUserIDBySubmissionID(ctx context.Context, submissionId string) (string, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	var userID string
+	err := pool.QueryRow(ctx, "SELECT user_id FROM dsa_submissions WHERE submission_id = $1", submissionId).Scan(&userID)
+	return userID, err
+}
+
+func AddMarksToLeaderboard(ctx context.Context, userID string, marks int) error {
+	if marks <= 0 {
+		return nil
+	}
+
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	cmdTag, err := pool.Exec(ctx,
+		"UPDATE leaderboard SET marks = marks + $2 WHERE user_id = $1",
+		userID,
+		marks,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		_, err = pool.Exec(ctx,
+			"INSERT INTO leaderboard (user_id, marks) VALUES ($1, $2)",
+			userID,
+			marks,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DSA Challenges
 
 func GetDSAChallenge(ctx context.Context, id string) (types.DSAChallengesType, error) {
 	pool := database.GetPool()
@@ -252,30 +321,158 @@ func AddDSASubmission(ctx context.Context, submissionId string, challengeId int,
 	return true, nil
 }
 
+func GetDSASubmissionCount(ctx context.Context, submissionId string) (int64, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	var count int64
+	err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM dsa_submission_results WHERE submission_id = $1", submissionId).Scan(&count)
+	return count, err
+}
+
+func HasUserPassedDSAChallenge(ctx context.Context, userId string, challengeId int) (bool, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	var count int64
+	err := pool.QueryRow(ctx,
+		`SELECT COUNT(*)
+		 FROM dsa_submissions
+		 WHERE user_id = $1
+		   AND challenge_id = $2
+		   AND evaluation_status = 2`,
+		userId,
+		challengeId,
+	).Scan(&count)
+	if err != nil {
+		logger.Log.Error("HasUserPassedDSAChallenge: query error", "user_id", userId, "challenge_id", challengeId, "error", err)
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func GetPassDSASubmissionCount(ctx context.Context, submissionId string) (int64, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	var count int64
+	err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM dsa_submission_results WHERE submission_id = $1 AND status = 2", submissionId).Scan(&count)
+	return count, err
+}
+
+func AddDSASubmissionResult(ctx context.Context, submissionId string, payload types.TestDSAChallengeResponse) (bool, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	if payload.Token == "" {
+		err := errors.New("missing callback token")
+		logger.Log.Error("AddDSASubmissionResult: invalid payload", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	statusID := payload.Status.StatusID
+	status := 2
+	switch {
+	case statusID < 3:
+		status = 1
+	case statusID > 3:
+		status = 3
+	}
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		logger.Log.Error("AddDSASubmissionResult: begin transaction error", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO dsa_submission_results (submission_id, status, token)
+		 VALUES ($1, $2, $3)
+		 ON CONFLICT (token)
+		 DO UPDATE SET
+		 	submission_id = EXCLUDED.submission_id,
+		 	status = EXCLUDED.status`,
+		submissionId,
+		status,
+		payload.Token,
+	)
+	if err != nil {
+		logger.Log.Error("AddDSASubmissionResult: upsert error", "submission_id", submissionId, "token", payload.Token, "error", err)
+		return false, err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		logger.Log.Error("AddDSASubmissionResult: commit error", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
 func UpdateDSASubmission(ctx context.Context, submissionId string, payload types.TestDSAChallengeResponse) (bool, error) {
 	pool := database.GetPool()
 	ctx, cancel := utils.WithTimeout(ctx)
 	defer cancel()
 
-	if payload.Status.StatusID == 3 {
-		_, err := pool.Exec(ctx,
-			`UPDATE dsa_submissions SET pass_count = pass_count + 1 WHERE submission_id = $1`,
-			submissionId,
-		)
-		if err != nil {
-			logger.Log.Error("UpdateDSASubmission: update error", "submission_id", submissionId, "error", err)
-			return false, err
-		}
-	} else if payload.Status.StatusID == 4 {
-		_, err := pool.Exec(ctx,
-			`UPDATE dsa_submissions SET fail_count = fail_count + 1 WHERE submission_id = $1`,
-			submissionId,
-		)
-		if err != nil {
-			logger.Log.Error("UpdateDSASubmission: update error", "submission_id", submissionId, "error", err)
-			return false, err
-		}
+	if payload.Token == "" {
+		err := errors.New("missing callback token")
+		logger.Log.Error("AddDSASubmissionResult: invalid payload", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	challengeId, err := GetChallengeIDBySubmissionID(context.Background(), submissionId)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to get challenge ID", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	testCount, err := GetDSATestCaseCount(context.Background(), challengeId)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to get test case count", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+	submissionCount, err := GetDSASubmissionCount(context.Background(), submissionId)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to get submission count", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	if submissionCount < testCount {
+		return true, nil
+	}
+
+	passCount, err := GetPassDSASubmissionCount(context.Background(), submissionId)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to count successful results", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	failCount := submissionCount - passCount
+	evaluationStatus := 3
+	if passCount >= testCount {
+		evaluationStatus = 2
+	}
+
+	_, err = pool.Exec(ctx,
+		`UPDATE dsa_submissions
+		 SET pass_count = $1,
+		 	fail_count = $2,
+		 	evaluation_status = $3
+		 WHERE submission_id = $4`,
+		passCount,
+		failCount,
+		evaluationStatus,
+		submissionId,
+	)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to update submission aggregates", "submission_id", submissionId, "error", err)
+		return false, err
 	}
 
 	return true, nil
+
 }
