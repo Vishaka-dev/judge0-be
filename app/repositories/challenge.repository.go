@@ -103,13 +103,14 @@ func GetDSAChallenge(ctx context.Context, id string) (types.DSAChallengesType, e
 	defer cancel()
 	var challenge types.DSAChallengesType
 	err := pool.QueryRow(ctx,
-		`select id, created_at, title, description, type_id, status_id, type, status,
+		`select id, created_at, title, description,marks, type_id, status_id, type, status,
 			sample_input, sample_output, note
-			from get_dsa_challenges_view where id = $1`, id).Scan(
+			from get_dsa_challenges_view where id = $1 and status_id = 2`, id).Scan(
 		&challenge.ID,
 		&challenge.CreatedAt,
 		&challenge.Title,
 		&challenge.Description,
+		&challenge.Marks,
 		&challenge.TypeID,
 		&challenge.StatusID,
 		&challenge.Type,

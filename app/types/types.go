@@ -38,6 +38,7 @@ type DSAChallengesType struct {
 	SampleInput  string  `json:"sample_input"`
 	SampleOutput string  `json:"sample_output"`
 	Note         *string `json:"note"`
+	Marks        int     `json:"marks"`
 }
 
 type AddDSAChallengeRequestType struct {
