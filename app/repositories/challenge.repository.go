@@ -43,8 +43,9 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 	offset := (page - 1) * ps
 
 	rows, err := pool.Query(ctx,
-		`select id, created_at, title, description, type_id, status_id, type, status
+		`select id, created_at, title, description, type_id, status_id, type, status, marks
 			from preview_challenges_view
+			where status_id = 2
 			order by id desc
 			limit $1 offset $2`,
 		ps, offset)
@@ -66,6 +67,7 @@ func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.Chal
 			&challenge.StatusID,
 			&challenge.Type,
 			&challenge.Status,
+			&challenge.Marks,
 		); err != nil {
 			logger.Log.Error("Scan Error", "error", err)
 			return nil, 0, 0, err

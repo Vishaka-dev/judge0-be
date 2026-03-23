@@ -15,6 +15,7 @@ type ChallengesType struct {
 	StatusID    int    `json:"status_id"`
 	Type        string `json:"type"`
 	Status      string `json:"status"`
+	Marks       int    `json:"marks"`
 }
 
 type AddChallengeRequestType struct {
