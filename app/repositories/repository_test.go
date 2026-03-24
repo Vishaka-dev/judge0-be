@@ -7,6 +7,7 @@ import (
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/database"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
 	"github.com/joho/godotenv"
 )
@@ -41,5 +42,31 @@ func TestAddDSASubmission(t *testing.T) {
 		logger.Log.Info("Submission Added Subccessfully")
 	} else {
 		logger.Log.Info("error ", err)
+	}
+}
+
+func TestRegisterUser(t *testing.T) {
+	err := RegisterUser(context.Background(), types.RegisterUserRequestType{
+		UserID: "7ef624e2-790c-468c-91c6-bf97d7232620",
+		Email:  "test@example.com",
+		Name:   "Test User",
+	})
+	if err != nil {
+		t.Fatal("Failed to register user", err)
+	}
+}
+
+func TestCheckUserExists(t *testing.T) {
+	exists, err := CheckUserExists(context.Background(), "7ef624e2-790c-468c-91c6-bf97d7232620")
+	logger.Log.Info("TestCheckUserExists", "exists", exists, "error", err)
+	if !exists {
+		t.Fatal("Expected user to exist, but it does not")
+	}
+}
+
+func TestAddUserToLeaderboard(t *testing.T) {
+	err := AddUserToLeaderboard(context.Background(), "7ef624e2-790c-468c-91c6-bf97d7232620")
+	if err != nil {
+		t.Fatal("Failed to add user to leaderboard", err)
 	}
 }

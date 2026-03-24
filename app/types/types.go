@@ -1,5 +1,11 @@
 package types
 
+type RegisterUserRequestType struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	Name   string `json:"name"`
+}
+
 type ChallengesType struct {
 	ID          int    `json:"id"`
 	CreatedAt   string `json:"created_at"`
@@ -9,6 +15,7 @@ type ChallengesType struct {
 	StatusID    int    `json:"status_id"`
 	Type        string `json:"type"`
 	Status      string `json:"status"`
+	Marks       int    `json:"marks"`
 }
 
 type AddChallengeRequestType struct {
@@ -31,6 +38,7 @@ type DSAChallengesType struct {
 	SampleInput  string  `json:"sample_input"`
 	SampleOutput string  `json:"sample_output"`
 	Note         *string `json:"note"`
+	Marks        int     `json:"marks"`
 }
 
 type AddDSAChallengeRequestType struct {

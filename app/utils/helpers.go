@@ -12,6 +12,22 @@ import (
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
 )
 
+func ValidateRegisterUserRequest(request types.RegisterUserRequestType) error {
+	if request.Name == "" {
+		logger.Log.Warn("Validation failed: name is required", "request", request)
+		return errors.New("name is required")
+	}
+	if request.UserID == "" {
+		logger.Log.Warn("Validation failed: user_id is required", "request", request)
+		return errors.New("user_id is required")
+	}
+	if request.Email == "" {
+		logger.Log.Warn("Validation failed: email is required", "request", request)
+		return errors.New("email is required")
+	}
+	return nil
+}
+
 func ValidateAddChallengeRequest(request types.AddChallengeRequestType) error {
 	if request.Title == "" {
 		logger.Log.Warn("Validation failed: title is required", "request", request)

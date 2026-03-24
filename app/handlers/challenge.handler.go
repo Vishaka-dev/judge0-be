@@ -216,7 +216,20 @@ func SubmitDSAChallengeHandler(c *gin.Context) {
 	}
 
 	testCount, err := repositories.GetDSATestCaseCount(ctx, challenge.ChallengeID)
-	repositories.AddDSASubmission(ctx, submissionId, challenge.ChallengeID, userId.(string), int(testCount))
+	if err != nil {
+		logger.Log.Error("Failed to get DSA test case count", "challenge_id", challenge.ChallengeID, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = repositories.AddDSASubmission(ctx, submissionId, challenge.ChallengeID, userId.(string), int(testCount))
+	if err != nil {
+		logger.Log.Error("Failed to persist DSA submission", "submission_id", submissionId, "challenge_id", challenge.ChallengeID, "user_id", userId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	logger.Log.Info("DSA submission created", "submission_id", submissionId, "challenge_id", challenge.ChallengeID, "user_id", userId, "test_count", testCount)
 
 	c.JSON(http.StatusOK, gin.H{
 		"submission_id": submissionId,
@@ -225,6 +238,7 @@ func SubmitDSAChallengeHandler(c *gin.Context) {
 
 func EvaluateDSAChallengeHandler(c *gin.Context) {
 	submissionId := c.Param("id")
+	logger.Log.Info("Received DSA evaluation callback", "submission_id", submissionId)
 	body, err := c.GetRawData()
 	if err != nil {
 		logger.Log.Error("Failed to read Judge0 callback body", "submission_id", submissionId, "error", err)
@@ -237,11 +251,19 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 		return
 	}
-	status, err := repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
+	status, err := repositories.AddDSASubmissionResult(c.Request.Context(), submissionId, result)
 	if err != nil {
 		logger.Log.Error("Failed to update DSA submission", "submission_id", submissionId, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	_, err = repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
+	if err != nil {
+		logger.Log.Error("Failed to finalize DSA submission", "submission_id", submissionId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	logger.Log.Info("DSA submission updated", "submission_id", submissionId, "status", status)
 }
