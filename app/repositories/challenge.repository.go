@@ -9,6 +9,7 @@ import (
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
+	"github.com/jackc/pgx/v5"
 )
 
 func GetAllChallenges(ctx context.Context, limit, pageSize string) ([]types.ChallengesType, int64, int64, error) {
@@ -439,55 +440,113 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 	return true, nil
 }
 
-func UpdateDSASubmission(ctx context.Context, submissionId string, payload types.TestDSAChallengeResponse) (bool, error) {
-	pool := database.GetPool()
-	ctx, cancel := utils.WithTimeout(ctx)
-	defer cancel()
-	logger.Log.Info("UpdateDSASubmission: evaluating submission", "submission_id", submissionId, "token", payload.Token)
+type dsaSubmissionMeta struct {
+	userID           string
+	challengeID      int
+	testCount        int64
+	evaluationStatus int
+}
 
-	if payload.Token == "" {
-		err := errors.New("missing callback token")
-		logger.Log.Error("AddDSASubmissionResult: invalid payload", "submission_id", submissionId, "error", err)
-		return false, err
-	}
-
-	challengeId, err := GetChallengeIDBySubmissionID(context.Background(), submissionId)
+func getDSASubmissionMetaForUpdate(ctx context.Context, tx pgx.Tx, submissionId string) (dsaSubmissionMeta, error) {
+	var meta dsaSubmissionMeta
+	err := tx.QueryRow(ctx,
+		`SELECT user_id, challenge_id, test_count, evaluation_status
+		 FROM dsa_submissions
+		 WHERE submission_id = $1
+		 FOR UPDATE`,
+		submissionId,
+	).Scan(&meta.userID, &meta.challengeID, &meta.testCount, &meta.evaluationStatus)
 	if err != nil {
-		logger.Log.Error("UpdateDSASubmission: failed to get challenge ID", "submission_id", submissionId, "error", err)
-		return false, err
+		return dsaSubmissionMeta{}, err
 	}
 
-	testCount, err := GetDSATestCaseCount(context.Background(), challengeId)
+	return meta, nil
+}
+
+func lockUserChallengeEvaluation(ctx context.Context, tx pgx.Tx, userID string, challengeID int) error {
+	_, err := tx.Exec(ctx,
+		`SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2::text)::bigint)`,
+		userID,
+		challengeID,
+	)
+	return err
+}
+
+func getDSASubmissionResultCounts(ctx context.Context, tx pgx.Tx, submissionId string) (int64, int64, error) {
+	var submissionCount int64
+	var passCount int64
+	err := tx.QueryRow(ctx,
+		`SELECT
+			COUNT(*) AS total_count,
+			COUNT(*) FILTER (WHERE status = 2) AS pass_count
+		 FROM dsa_submission_results
+		 WHERE submission_id = $1`,
+		submissionId,
+	).Scan(&submissionCount, &passCount)
 	if err != nil {
-		logger.Log.Error("UpdateDSASubmission: failed to get test case count", "submission_id", submissionId, "error", err)
-		return false, err
+		return 0, 0, err
 	}
-	submissionCount, err := GetDSASubmissionCount(context.Background(), submissionId)
+
+	return submissionCount, passCount, nil
+}
+
+func hasUserPassedDSAChallengeTx(ctx context.Context, tx pgx.Tx, userID string, challengeID int) (bool, error) {
+	var hasPassedBefore bool
+	err := tx.QueryRow(ctx,
+		`SELECT EXISTS (
+			SELECT 1
+			FROM dsa_submissions
+			WHERE user_id = $1
+			  AND challenge_id = $2
+			  AND evaluation_status = 2
+		)`,
+		userID,
+		challengeID,
+	).Scan(&hasPassedBefore)
 	if err != nil {
-		logger.Log.Error("UpdateDSASubmission: failed to get submission count", "submission_id", submissionId, "error", err)
 		return false, err
 	}
-	logger.Log.Info("UpdateDSASubmission: submission progress", "submission_id", submissionId, "received_results", submissionCount, "expected_results", testCount)
 
-	if submissionCount < testCount {
-		logger.Log.Info("UpdateDSASubmission: waiting for more callbacks", "submission_id", submissionId, "remaining", testCount-submissionCount)
-		return true, nil
-	}
+	return hasPassedBefore, nil
+}
 
-	passCount, err := GetPassDSASubmissionCount(context.Background(), submissionId)
+func awardLeaderboardMarksTx(ctx context.Context, tx pgx.Tx, userID string, challengeID int) error {
+	var marks int
+	err := tx.QueryRow(ctx,
+		"SELECT marks FROM challenges WHERE id = $1",
+		challengeID,
+	).Scan(&marks)
 	if err != nil {
-		logger.Log.Error("UpdateDSASubmission: failed to count successful results", "submission_id", submissionId, "error", err)
-		return false, err
+		return err
 	}
 
-	failCount := submissionCount - passCount
-	evaluationStatus := 3
-	if passCount >= testCount {
-		evaluationStatus = 2
+	if marks <= 0 {
+		return nil
 	}
-	logger.Log.Info("UpdateDSASubmission: computed aggregate", "submission_id", submissionId, "pass_count", passCount, "fail_count", failCount, "evaluation_status", evaluationStatus)
 
-	_, err = pool.Exec(ctx,
+	cmdTag, err := tx.Exec(ctx,
+		"UPDATE leaderboard SET marks = marks + $2 WHERE user_id = $1",
+		userID,
+		marks,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() > 0 {
+		return nil
+	}
+
+	_, err = tx.Exec(ctx,
+		"INSERT INTO leaderboard (user_id, marks) VALUES ($1, $2)",
+		userID,
+		marks,
+	)
+	return err
+}
+
+func updateDSASubmissionAggregatesTx(ctx context.Context, tx pgx.Tx, submissionId string, passCount, failCount int64, evaluationStatus int) error {
+	_, err := tx.Exec(ctx,
 		`UPDATE dsa_submissions
 		 SET pass_count = $1,
 		 	fail_count = $2,
@@ -498,12 +557,152 @@ func UpdateDSASubmission(ctx context.Context, submissionId string, payload types
 		evaluationStatus,
 		submissionId,
 	)
+	return err
+}
+
+type dsaSubmissionEvaluation struct {
+	meta             dsaSubmissionMeta
+	submissionCount  int64
+	passCount        int64
+	failCount        int64
+	evaluationStatus int
+	shouldFinalize   bool
+}
+
+func commitDSASubmissionTx(ctx context.Context, tx pgx.Tx, submissionId string) error {
+	if err := tx.Commit(ctx); err != nil {
+		logger.Log.Error("UpdateDSASubmission: commit error", "submission_id", submissionId, "error", err)
+		return err
+	}
+	return nil
+}
+
+func prepareDSASubmissionEvaluationTx(ctx context.Context, tx pgx.Tx, submissionId string) (dsaSubmissionEvaluation, error) {
+	meta, err := getDSASubmissionMetaForUpdate(ctx, tx, submissionId)
+	if err != nil {
+		return dsaSubmissionEvaluation{}, err
+	}
+
+	err = lockUserChallengeEvaluation(ctx, tx, meta.userID, meta.challengeID)
+	if err != nil {
+		return dsaSubmissionEvaluation{}, err
+	}
+
+	if meta.evaluationStatus != 1 {
+		logger.Log.Info("UpdateDSASubmission: already finalized, skipping", "submission_id", submissionId, "evaluation_status", meta.evaluationStatus)
+		return dsaSubmissionEvaluation{meta: meta, shouldFinalize: false}, nil
+	}
+
+	submissionCount, passCount, err := getDSASubmissionResultCounts(ctx, tx, submissionId)
+	if err != nil {
+		return dsaSubmissionEvaluation{}, err
+	}
+
+	logger.Log.Info("UpdateDSASubmission: submission progress", "submission_id", submissionId, "received_results", submissionCount, "expected_results", meta.testCount)
+	if submissionCount < meta.testCount {
+		logger.Log.Info("UpdateDSASubmission: waiting for more callbacks", "submission_id", submissionId, "remaining", meta.testCount-submissionCount)
+		return dsaSubmissionEvaluation{
+			meta:            meta,
+			submissionCount: submissionCount,
+			passCount:       passCount,
+			shouldFinalize:  false,
+		}, nil
+	}
+
+	failCount := submissionCount - passCount
+	evaluationStatus := 3
+	if passCount == submissionCount {
+		evaluationStatus = 2
+	}
+
+	logger.Log.Info("UpdateDSASubmission: computed aggregate", "submission_id", submissionId, "pass_count", passCount, "fail_count", failCount, "evaluation_status", evaluationStatus)
+
+	return dsaSubmissionEvaluation{
+		meta:             meta,
+		submissionCount:  submissionCount,
+		passCount:        passCount,
+		failCount:        failCount,
+		evaluationStatus: evaluationStatus,
+		shouldFinalize:   true,
+	}, nil
+}
+
+func maybeAwardSubmissionMarksTx(ctx context.Context, tx pgx.Tx, submissionId string, eval dsaSubmissionEvaluation) error {
+	if eval.evaluationStatus != 2 {
+		return nil
+	}
+
+	hasPassedBefore, err := hasUserPassedDSAChallengeTx(ctx, tx, eval.meta.userID, eval.meta.challengeID)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to check prior pass", "submission_id", submissionId, "user_id", eval.meta.userID, "challenge_id", eval.meta.challengeID, "error", err)
+		return err
+	}
+
+	if hasPassedBefore {
+		logger.Log.Info("UpdateDSASubmission: user already passed challenge, skipping marks", "submission_id", submissionId, "user_id", eval.meta.userID, "challenge_id", eval.meta.challengeID)
+		return nil
+	}
+
+	err = awardLeaderboardMarksTx(ctx, tx, eval.meta.userID, eval.meta.challengeID)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to add leaderboard marks", "submission_id", submissionId, "user_id", eval.meta.userID, "challenge_id", eval.meta.challengeID, "error", err)
+		return err
+	}
+
+	logger.Log.Info("UpdateDSASubmission: leaderboard marks awarded", "submission_id", submissionId, "user_id", eval.meta.userID, "challenge_id", eval.meta.challengeID)
+	return nil
+}
+
+func UpdateDSASubmission(ctx context.Context, submissionId string, payload types.TestDSAChallengeResponse) (bool, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	logger.Log.Info("UpdateDSASubmission: evaluating submission", "submission_id", submissionId, "token", payload.Token)
+
+	if payload.Token == "" {
+		err := errors.New("missing callback token")
+		logger.Log.Error("UpdateDSASubmission: invalid payload", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: begin transaction error", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+
+	eval, err := prepareDSASubmissionEvaluationTx(ctx, tx, submissionId)
+	if err != nil {
+		logger.Log.Error("UpdateDSASubmission: failed to prepare submission evaluation", "submission_id", submissionId, "error", err)
+		return false, err
+	}
+
+	if !eval.shouldFinalize {
+		err = commitDSASubmissionTx(ctx, tx, submissionId)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	err = maybeAwardSubmissionMarksTx(ctx, tx, submissionId, eval)
+	if err != nil {
+		return false, err
+	}
+
+	err = updateDSASubmissionAggregatesTx(ctx, tx, submissionId, eval.passCount, eval.failCount, eval.evaluationStatus)
 	if err != nil {
 		logger.Log.Error("UpdateDSASubmission: failed to update submission aggregates", "submission_id", submissionId, "error", err)
 		return false, err
 	}
 
-	logger.Log.Info("UpdateDSASubmission: submission aggregate updated", "submission_id", submissionId, "pass_count", passCount, "fail_count", failCount, "evaluation_status", evaluationStatus)
+	err = commitDSASubmissionTx(ctx, tx, submissionId)
+	if err != nil {
+		return false, err
+	}
+
+	logger.Log.Info("UpdateDSASubmission: submission finalized", "submission_id", submissionId, "pass_count", eval.passCount, "fail_count", eval.failCount, "evaluation_status", eval.evaluationStatus)
 
 	return true, nil
 
