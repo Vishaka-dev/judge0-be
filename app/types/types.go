@@ -103,3 +103,9 @@ type Judge0SubmissionRequest struct {
 type Judge0BatchSubmissionRequest struct {
 	Submissions []Judge0SubmissionRequest `json:"submissions"`
 }
+
+type LeaderboardUserType struct {
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
+	XP     int    `json:"xp"`
+}
