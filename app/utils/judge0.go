@@ -33,7 +33,7 @@ func TestDSAChallenge(ctx context.Context, payload any) ([]byte, error) {
 		return nil, err
 	}
 
-	url := config.Get().Judge0API + "/submissions?base64_encoded=false&wait=true"
+	url := config.Get().Judge0API + "/submissions?base64_encoded=true&wait=true"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		logger.Log.Error("Failed to create Judge0 request", "error", err, "url", url)
