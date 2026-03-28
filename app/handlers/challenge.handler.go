@@ -11,6 +11,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetLeaderboardHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	users, currentPage, totalPages, err := repositories.GetLeaderboard(ctx, page, pageSize)
+	if err != nil {
+		logger.Log.Error("Failed to get leaderboard", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	logger.Log.Info("Fetched leaderboard", "currentPage", currentPage, "totalPages", totalPages, "user_count", len(users))
+	c.JSON(http.StatusOK, gin.H{
+		"currentPage": currentPage,
+		"totalPages":  totalPages,
+		"users":       users,
+	})
+}
+
 func GetAllChallengesHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	page := c.DefaultQuery("page", "1")
