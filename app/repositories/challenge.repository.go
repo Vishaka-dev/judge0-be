@@ -777,3 +777,36 @@ func UpdateDSASubmission(ctx context.Context, submissionId string, payload types
 	return true, nil
 
 }
+
+func GetSubmissionById(ctx context.Context, submissionId string, userID string) (types.DSASubmissionType, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+	var submission types.DSASubmissionType
+	err := pool.QueryRow(ctx,
+		`SELECT 
+		id,
+		created_at,
+		submission_id,
+		challenge_id,
+		user_id,
+		test_count,
+		pass_count,
+		fail_count,
+		evaluation_status
+	FROM dsa_submissions 
+	WHERE submission_id = $1 AND user_id = $2`,
+		submissionId, userID,
+	).Scan(
+		&submission.ID,
+		&submission.CreatedAt,
+		&submission.SubmissionID,
+		&submission.ChallengeID,
+		&submission.UserID,
+		&submission.TestCount,
+		&submission.PassCount,
+		&submission.FailCount,
+		&submission.EvaluationStatus,
+	)
+	return submission, err
+}
