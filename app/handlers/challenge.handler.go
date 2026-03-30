@@ -287,7 +287,7 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 }
 
 func GetDSASubmissionByIdHandler(c *gin.Context) {
-	submissionId := strings.TrimSpace(c.Param("id"))
+	submissionId := strings.TrimSpace(c.Query("id"))
 	if submissionId == "" {
 		logger.Log.Warn("Validation failed in GetDSASubmissionByIdHandler", "error", "submission_id is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "submission_id is required"})
