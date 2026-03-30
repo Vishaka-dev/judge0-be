@@ -46,10 +46,10 @@ func GetLeaderboard(ctx context.Context, page, pageSize string) ([]types.Leaderb
 
 	rows, err := pool.Query(ctx,
 		`SELECT l.user_id, u.name, l.marks
-			FROM leaderboard l
-			JOIN users u ON u.user_id = l.user_id
-			ORDER BY l.marks DESC, l.user_id ASC
-			LIMIT $1 OFFSET $2`,
+	 FROM leaderboard l
+	 JOIN users u ON u.user_id = l.user_id
+	 ORDER BY l.marks DESC, l.last_updates ASC
+	 LIMIT $1 OFFSET $2`,
 		ps, offset)
 	if err != nil {
 		logger.Log.Error("Query Error", "error", err)
