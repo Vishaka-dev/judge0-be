@@ -287,17 +287,7 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 }
 
 func GetDSASubmissionByIdHandler(c *gin.Context) {
-	var request struct {
-		SubmissionID string `json:"submission_id"`
-	}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		logger.Log.Warn("Invalid JSON in GetDSASubmissionByIdHandler", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
-		return
-	}
-
-	submissionId := strings.TrimSpace(request.SubmissionID)
+	submissionId := strings.TrimSpace(c.Param("id"))
 	if submissionId == "" {
 		logger.Log.Warn("Validation failed in GetDSASubmissionByIdHandler", "error", "submission_id is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "submission_id is required"})
