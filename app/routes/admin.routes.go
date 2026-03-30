@@ -10,5 +10,6 @@ func AdminRoutes(r *gin.RouterGroup) {
 	challenge := r.Group("/admin")
 	{
 		challenge.GET("/submissions/dsa", middlewares.AuthMiddleware("Subcommittee"), handlers.GetDSASubmissionResultsHandler)
+		challenge.GET("/submissions/dsa/:token/details", middlewares.AuthMiddleware("Subcommittee"), handlers.GetJudge0SubmissionDetailsHandler)
 	}
 }

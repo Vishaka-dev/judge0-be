@@ -5,6 +5,7 @@ import (
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/repositories"
+	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,4 +28,22 @@ func GetDSASubmissionResultsHandler(c *gin.Context) {
 		"currentPage": currentPage,
 		"totalPages":  totalPages,
 	})
+}
+
+func GetJudge0SubmissionDetailsHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	token := c.Param("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "token is required"})
+		return
+	}
+
+	result, err := utils.GetJudge0SubmissionDetails(ctx, token, c.Request.URL.RawQuery)
+	if err != nil {
+		logger.Log.Error("GetJudge0SubmissionDetailsHandler: failed to fetch submission details", "token", token, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", result)
 }
