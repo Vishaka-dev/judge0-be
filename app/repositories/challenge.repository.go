@@ -458,6 +458,7 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 	pool := database.GetPool()
 	ctx, cancel := utils.WithTimeout(ctx)
 	defer cancel()
+
 	logger.Log.Info("AddDSASubmissionResult: processing callback", "submission_id", submissionId, "token", payload.Token, "judge0_status_id", payload.Status.StatusID)
 
 	if payload.Token == "" {
@@ -466,13 +467,14 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 		return false, err
 	}
 
-	statusID := payload.Status.StatusID
-	status := 2
-	switch {
-	case statusID < 3:
-		status = 1
-	case statusID > 3:
-		status = 3
+	var dbStatus int
+	switch payload.Status.StatusID {
+	case 1, 2:
+		dbStatus = 1
+	case 3:
+		dbStatus = 2
+	default:
+		dbStatus = 3
 	}
 
 	tx, err := pool.Begin(ctx)
@@ -488,9 +490,10 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 		 ON CONFLICT (token)
 		 DO UPDATE SET
 		 	submission_id = EXCLUDED.submission_id,
-		 	status = EXCLUDED.status`,
+			status = EXCLUDED.status
+		`,
 		submissionId,
-		status,
+		dbStatus,
 		payload.Token,
 	)
 	if err != nil {
@@ -498,13 +501,12 @@ func AddDSASubmissionResult(ctx context.Context, submissionId string, payload ty
 		return false, err
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		logger.Log.Error("AddDSASubmissionResult: commit error", "submission_id", submissionId, "error", err)
+	if err := tx.Commit(ctx); err != nil {
+		logger.Log.Error("AddDSASubmissionResult: commit transaction error", "submission_id", submissionId, "error", err)
 		return false, err
 	}
 
-	logger.Log.Info("AddDSASubmissionResult: callback persisted", "submission_id", submissionId, "token", payload.Token, "mapped_status", status)
-
+	logger.Log.Info("AddDSASubmissionResult: submission result stored successfully", "submission_id", submissionId, "status", dbStatus)
 	return true, nil
 }
 
