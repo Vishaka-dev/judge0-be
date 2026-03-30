@@ -189,7 +189,6 @@ func TestDSAChallengeHandler(c *gin.Context) {
 }
 
 func SubmitDSAChallengeHandler(c *gin.Context) {
-
 	body, err := c.GetRawData()
 	submissionId := utils.GenerateSubmissionID()
 	userEmail, _ := c.Get("user_email")
@@ -215,25 +214,6 @@ func SubmitDSAChallengeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	testCases, err := repositories.GetDSAChallengeTestCases(c.Request.Context(), challenge.ChallengeID)
-	if err != nil {
-		logger.Log.Error("Failed to get DSA challenge test cases", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	_, err = utils.SubmitDSAChallenge(c, testCases, challenge, submissionId)
-	if err != nil {
-		logger.Log.Error("Failed to submit DSA challenge", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err != nil {
-		logger.Log.Error("Failed to get DSA test case count", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 
 	testCount, err := repositories.GetDSATestCaseCount(ctx, challenge.ChallengeID)
 	if err != nil {
@@ -242,9 +222,23 @@ func SubmitDSAChallengeHandler(c *gin.Context) {
 		return
 	}
 
+	testCases, err := repositories.GetDSAChallengeTestCases(ctx, challenge.ChallengeID)
+	if err != nil {
+		logger.Log.Error("Failed to get DSA challenge test cases", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	_, err = repositories.AddDSASubmission(ctx, submissionId, challenge.ChallengeID, userId.(string), int(testCount))
 	if err != nil {
 		logger.Log.Error("Failed to persist DSA submission", "submission_id", submissionId, "challenge_id", challenge.ChallengeID, "user_id", userId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = utils.SubmitDSAChallenge(ctx, testCases, challenge, submissionId)
+	if err != nil {
+		logger.Log.Error("Failed to submit DSA challenge", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -271,6 +265,7 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 		return
 	}
+
 	status, err := repositories.AddDSASubmissionResult(c.Request.Context(), submissionId, result)
 	if err != nil {
 		logger.Log.Error("Failed to update DSA submission", "submission_id", submissionId, "error", err)
@@ -278,12 +273,12 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
-	if err != nil {
-		logger.Log.Error("Failed to finalize DSA submission", "submission_id", submissionId, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	// _, err = repositories.UpdateDSASubmission(c.Request.Context(), submissionId, result)
+	// if err != nil {
+	// 	logger.Log.Error("Failed to finalize DSA submission", "submission_id", submissionId, "error", err)
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
 	logger.Log.Info("DSA submission updated", "submission_id", submissionId, "status", status)
 }
