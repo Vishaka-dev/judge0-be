@@ -121,3 +121,13 @@ type DSASubmissionType struct {
 	FailCount        int    `json:"fail_count"`
 	EvaluationStatus int    `json:"evaluation_status"`
 }
+
+type DSASubmissionResultType struct {
+	ID           int    `json:"id"`
+	CreatedAt    string `json:"created_at"`
+	SubmissionID string `json:"submission_id"`
+	UserID       string `json:"user_id"`
+	Name         string `json:"name"`
+	Status       int    `json:"status"`
+	Token        string `json:"token"`
+}

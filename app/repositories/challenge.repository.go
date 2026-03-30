@@ -810,3 +810,82 @@ func GetSubmissionById(ctx context.Context, submissionId string, userID string) 
 	)
 	return submission, err
 }
+
+func GetDSASubmissionResults(ctx context.Context, page, pageSize string) ([]types.DSASubmissionResultType, int64, int64, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	var count int64
+	err := pool.QueryRow(ctx,
+		"SELECT COUNT(*) FROM dsa_submission_results").Scan(&count)
+	if err != nil {
+		logger.Log.Error("GetDSASubmissionResults: failed to count submission results", "error", err)
+		return nil, 0, 0, err
+	}
+
+	ps, err := strconv.ParseInt(pageSize, 10, 64)
+	if err != nil || ps <= 0 {
+		logger.Log.Warn("GetDSASubmissionResults: invalid pageSize, defaulting to 10", "input", pageSize, "error", err)
+		ps = 10
+	}
+
+	p, err := strconv.ParseInt(page, 10, 64)
+	if err != nil || p <= 0 {
+		logger.Log.Warn("GetDSASubmissionResults: invalid page, defaulting to 1", "input", page, "error", err)
+		p = 1
+	}
+
+	totalPages := (count + ps - 1) / ps
+	if totalPages == 0 {
+		totalPages = 1
+	}
+	if p > totalPages {
+		p = totalPages
+	}
+
+	offset := (p - 1) * ps
+
+	var results []types.DSASubmissionResultType
+
+	rows, err := pool.Query(ctx,
+		`SELECT dsr.id, dsr.created_at, dsr.submission_id, ds.user_id, u.name, dsr.status, dsr.token
+		 FROM dsa_submission_results dsr
+		 JOIN dsa_submissions ds ON ds.submission_id = dsr.submission_id
+		 JOIN users u ON u.user_id = ds.user_id
+		 ORDER BY dsr.created_at DESC
+		 LIMIT $1 OFFSET $2`,
+		ps,
+		offset,
+	)
+	if err != nil {
+		logger.Log.Error("GetDSASubmissionResults: failed to query submission results", "error", err)
+		return nil, 0, 0, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result types.DSASubmissionResultType
+		err := rows.Scan(
+			&result.ID,
+			&result.CreatedAt,
+			&result.SubmissionID,
+			&result.UserID,
+			&result.Name,
+			&result.Status,
+			&result.Token,
+		)
+		if err != nil {
+			logger.Log.Error("GetDSASubmissionResults: failed to scan row", "error", err)
+			return nil, 0, 0, err
+		}
+		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		logger.Log.Error("GetDSASubmissionResults: rows error", "error", err)
+		return nil, 0, 0, err
+	}
+
+	logger.Log.Info("Fetched DSA submission results", "count", len(results), "page", p, "totalPages", totalPages)
+	return results, p, totalPages, nil
+}
