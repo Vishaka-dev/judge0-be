@@ -15,7 +15,7 @@ func ChallengeRoutes(r *gin.RouterGroup) {
 		challenge.GET("/submission/dsa", middlewares.AuthMiddleware(), handlers.GetDSASubmissionByIdHandler)
 		challenge.POST("/add", middlewares.AuthMiddleware("Subcommittee"), handlers.AddChallengeHandler)
 		challenge.POST("/test", middlewares.AuthMiddleware(), handlers.TestDSAChallengeHandler)
-		challenge.POST("/submit/dsa", middlewares.AuthMiddleware("Subcommittee"), handlers.SubmitDSAChallengeHandler)
+		challenge.POST("/submit/dsa", middlewares.AuthMiddleware(), handlers.SubmitDSAChallengeHandler)
 		challenge.POST("/evaluate/dsa/:id", handlers.EvaluateDSAChallengeHandler)
 		challenge.PUT("/evaluate/dsa/:id", handlers.EvaluateDSAChallengeHandler)
 	}
