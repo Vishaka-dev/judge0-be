@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/logger"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/repositories"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/types"
 	"github.com/Mozilla-Campus-Club-of-SLIIT/judge0-be/app/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 func GetLeaderboardHandler(c *gin.Context) {
@@ -281,4 +284,55 @@ func EvaluateDSAChallengeHandler(c *gin.Context) {
 	// }
 
 	logger.Log.Info("DSA submission updated", "submission_id", submissionId, "status", status)
+}
+
+func GetDSASubmissionByIdHandler(c *gin.Context) {
+	var request struct {
+		SubmissionID string `json:"submission_id"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		logger.Log.Warn("Invalid JSON in GetDSASubmissionByIdHandler", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+
+	submissionId := strings.TrimSpace(request.SubmissionID)
+	if submissionId == "" {
+		logger.Log.Warn("Validation failed in GetDSASubmissionByIdHandler", "error", "submission_id is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "submission_id is required"})
+		return
+	}
+
+	userIdValue, exists := c.Get("user_id")
+	if !exists {
+		logger.Log.Error("Missing user_id in request context", "submission_id", submissionId)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	userId, ok := userIdValue.(string)
+	if !ok || strings.TrimSpace(userId) == "" {
+		logger.Log.Error("Invalid user_id type in request context", "submission_id", submissionId)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	logger.Log.Info("Fetching submission by ID", "submission_id", submissionId, "user_id", userId)
+	ctx := c.Request.Context()
+	submission, err := repositories.GetSubmissionById(ctx, submissionId, userId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			logger.Log.Warn("Submission not found", "submission_id", submissionId, "user_id", userId)
+			c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+			return
+		}
+
+		logger.Log.Error("Failed to get submission by ID", "submission_id", submissionId, "user_id", userId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, submission)
+
 }
