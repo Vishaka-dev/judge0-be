@@ -849,7 +849,7 @@ func GetDSASubmissionResults(ctx context.Context, page, pageSize string) ([]type
 	var results []types.DSASubmissionResultType
 
 	rows, err := pool.Query(ctx,
-		`SELECT dsr.id, dsr.created_at, dsr.submission_id, ds.user_id, u.name, dsr.status, dsr.token
+		`SELECT dsr.id, dsr.created_at, dsr.submission_id, ds.challenge_id, ds.user_id, u.name, dsr.status, dsr.token
 		 FROM dsa_submission_results dsr
 		 JOIN dsa_submissions ds ON ds.submission_id = dsr.submission_id
 		 JOIN users u ON u.user_id = ds.user_id
@@ -870,6 +870,7 @@ func GetDSASubmissionResults(ctx context.Context, page, pageSize string) ([]type
 			&result.ID,
 			&result.CreatedAt,
 			&result.SubmissionID,
+			&result.ChallengeID,
 			&result.UserID,
 			&result.Name,
 			&result.Status,

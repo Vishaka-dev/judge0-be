@@ -126,6 +126,7 @@ type DSASubmissionResultType struct {
 	ID           int    `json:"id"`
 	CreatedAt    string `json:"created_at"`
 	SubmissionID string `json:"submission_id"`
+	ChallengeID  int    `json:"challenge_id"`
 	UserID       string `json:"user_id"`
 	Name         string `json:"name"`
 	Status       int    `json:"status"`
