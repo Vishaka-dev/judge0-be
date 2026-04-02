@@ -9,7 +9,7 @@ import (
 func AdminRoutes(r *gin.RouterGroup) {
 	challenge := r.Group("/admin")
 	{
-		challenge.GET("/submissions/dsa", middlewares.AuthMiddleware("Subcommittee"), handlers.GetDSASubmissionResultsHandler)
-		challenge.GET("/submissions/dsa/:token/details", middlewares.AuthMiddleware("Subcommittee"), handlers.GetJudge0SubmissionDetailsHandler)
+		challenge.GET("/submissions/dsa", middlewares.AuthMiddleware("Codenight host"), handlers.GetDSASubmissionResultsHandler)
+		challenge.GET("/submissions/dsa/:token/details", middlewares.AuthMiddleware("Codenight host"), handlers.GetJudge0SubmissionDetailsHandler)
 	}
 }
