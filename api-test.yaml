@@ -15,12 +15,12 @@ collection:
       sortKey: -1771445867440
       description: ""
     children:
-      - url: "{{ _.url }}/challenge/get/6"
+      - url: "{{ _.url }}/challenge/get/10"
         name: challenge by index
         meta:
           id: req_dbc3b43d4e9646069527f52367c33763
           created: 1767284198886
-          modified: 1772105494386
+          modified: 1774719099161
           isPrivate: false
           description: ""
           sortKey: -1771445871758
@@ -43,25 +43,21 @@ collection:
         meta:
           id: req_0cbcbff36d014e579f7dc17da27c5c90
           created: 1767354336110
-          modified: 1771445886282
+          modified: 1775206720373
           isPrivate: false
           description: ""
           sortKey: -1771445871858
         method: GET
-        body:
-          mimeType: application/x-www-form-urlencoded
         parameters:
           - name: page
-            value: "2"
+            value: "1"
             description: ""
             disabled: false
           - name: pageSize
-            value: "20"
+            value: "10"
             description: ""
             disabled: false
         headers:
-          - name: Content-Type
-            value: application/x-www-form-urlencoded
           - name: User-Agent
             value: insomnia/12.2.0
             description: ""
@@ -79,7 +75,7 @@ collection:
         meta:
           id: req_a5f23c5694fa4e348003475876711716
           created: 1771446506869
-          modified: 1774088334751
+          modified: 1774291892180
           isPrivate: false
           description: ""
           sortKey: -1771445871658
@@ -89,9 +85,10 @@ collection:
           text: >-
             {
               "title": "Merge Intervals",
+            	"marks":5,
               "description": "Given a collection of intervals, merge all overlapping intervals and return the result.",
               "type_id": 1,
-              "status_id": 1,
+              "status_id": 2,
               "sample_input": "[[1,3],[2,6],[8,10],[15,18]]",
               "sample_output": "[[1,6],[8,10],[15,18]]",
               "note": "* [1,3] overlaps with [2,6]\n* They merge into [1,6]\n* The others do not overlap",
@@ -110,7 +107,7 @@ collection:
           - name: Authorization
             value: Bearer {{ _.token }}
             description: ""
-            disabled: true
+            disabled: false
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -119,25 +116,25 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://localhost:3000/api/challenge/test
+      - url: http://localhost:8080/api/challenge/test
         name: "test challenge "
         meta:
           id: req_388b4e11935e49eaaba87fa9c0b395c2
           created: 1772010421079
-          modified: 1774090137188
+          modified: 1774710830181
           isPrivate: false
           description: ""
           sortKey: -1771445871558
         method: POST
         body:
           mimeType: application/json
-          text: |-
+          text: >-
             {
-            	"challenge_id":1,
-            	"language_id":46,
-            	"source_code":"echos hello",
-            	"stdin":" ",
-            	"expected_output":"hello"
+            	"challenge_id":12,
+            	"language_id":71,
+            	"source_code":"ZnJvbSB0eXBpbmcgaW1wb3J0IExpc3QKCmRlZiBtZXJnZV9pbnRlcnZhbHMoaW50ZXJ2YWxzOiBMaXN0W0xpc3RbaW50XV0pIC0+IExpc3RbTGlzdFtpbnRdXToKICAgIGlmIG5vdCBpbnRlcnZhbHM6CiAgICAgICAgcmV0dXJuIFtdCiAgICAKICAgICMgU29ydCBpbnRlcnZhbHMgYnkgc3RhcnRpbmcgcG9pbnQKICAgIGludGVydmFscy5zb3J0KGtleT1sYW1iZGEgeDogeFswXSkKICAgIAogICAgbWVyZ2VkID0gW2ludGVydmFsc1swXV0KICAgIAogICAgZm9yIGN1cnJlbnQgaW4gaW50ZXJ2YWxzWzE6XToKICAgICAgICBsYXN0ID0gbWVyZ2VkWy0xXQogICAgICAgIGlmIGN1cnJlbnRbMF0gPD0gbGFzdFsxXTogICMgT3ZlcmxhcHBpbmcKICAgICAgICAgICAgbGFzdFsxXSA9IG1heChsYXN0WzFdLCBjdXJyZW50WzFdKSAgIyBNZXJnZQogICAgICAgIGVsc2U6CiAgICAgICAgICAgIG1lcmdlZC5hcHBlbmQoY3VycmVudCkKICAgIAogICAgcmV0dXJuIG1lcmdlZAoKcHJpbnQobWVyZ2VfaW50ZXJ2YWxzKGlucHV0KCkpKQ==",
+            	"stdin":"W1sxLDNdLFsyLDZdLFs4LDEwXSxbMTUsMThdXQ==",
+            	"expected_output":"W1sxLDZdLFs4LDEwXSxbMTUsMThdXQ=="
             }
         headers:
           - name: Content-Type
@@ -158,12 +155,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://localhost:3000/api/challenge/submit/dsa
+      - url: "{{ _.url }}/challenge/submit/dsa"
         name: "submit challenge "
         meta:
           id: req_c1675beb24de4eabaa252fe4e1b8bdcf
           created: 1772094010035
-          modified: 1772463494861
+          modified: 1774633746113
           isPrivate: false
           description: ""
           sortKey: -1771128853947.5
@@ -187,6 +184,8 @@ collection:
             value: Bearer {{ _.token }}
             description: ""
             disabled: false
+        authentication:
+          type: none
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -195,12 +194,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: https://7451-2402-d000-a400-62eb-c95b-7ac6-e0af-f805.ngrok-free.app/api/challenge/evaluate/dsa/L0gfdSbVT4
+      - url: "{{ _.url }}/challenge/evaluate/dsa/aeETmcZT"
         name: "evaluate dsa challenge "
         meta:
           id: req_edf920348d5844829d0ec4ab68551738
           created: 1772452962112
-          modified: 1772454260382
+          modified: 1774354740163
           isPrivate: false
           description: ""
           sortKey: -1770970345142.25
@@ -240,12 +239,76 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: "{{ _.url }}/challenge/submission/dsa"
+        name: get submission
+        meta:
+          id: req_eed723dcf15e456fbf845ba4649f1b8c
+          created: 1774858102026
+          modified: 1774877240239
+          isPrivate: false
+          description: ""
+          sortKey: -1770970345092.25
+        method: GET
+        parameters:
+          - name: id
+            value: TX2bhLUz
+            description: ""
+            disabled: false
+        headers:
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
+          - name: Authorization
+            value: Bearer {{ _.token }}
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.url }}/challenge/leaderboard/get"
+        name: leaderboard
+        meta:
+          id: req_591b76d93dd64f909ee57bab8c316bb8
+          created: 1774877219286
+          modified: 1774966694668
+          isPrivate: false
+          description: ""
+          sortKey: -1770970345042.25
+        method: GET
+        parameters:
+          - name: page
+            value: "2"
+            description: ""
+            disabled: false
+          - name: pageSize
+            value: "1"
+            description: ""
+            disabled: false
+        headers:
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
   - name: athuntication
     meta:
       id: fld_d85735274fcc44ae8d16b03cabe08c0c
       created: 1771483704357
-      modified: 1771483732233
-      sortKey: -1771483704357
+      modified: 1775074676622
+      sortKey: -1771483704557
       description: ""
     children:
       - url: https://accounts.sliitmozilla.org/api/login
@@ -253,7 +316,7 @@ collection:
         meta:
           id: req_e1c90aed7277438cba8868b76cced351
           created: 1771483733215
-          modified: 1771484032802
+          modified: 1774633211680
           isPrivate: false
           description: ""
           sortKey: -1771483733215
@@ -285,7 +348,7 @@ collection:
         meta:
           id: req_d5871cb1369b4cc499ad4c9ac6e76b1c
           created: 1771484151476
-          modified: 1771513527282
+          modified: 1775202523334
           isPrivate: false
           description: ""
           sortKey: -1771464802536.5
@@ -312,14 +375,163 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: "https://accounts.sliitmozilla.org/api/token/refresh "
+        name: refresh
+        meta:
+          id: req_99d5e15916344ec18362269b6e6f177d
+          created: 1774461844820
+          modified: 1774461880912
+          isPrivate: false
+          description: ""
+          sortKey: -1771474267875.75
+        method: POST
+        body:
+          mimeType: application/json
+          text: ""
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.3.1
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: users
+    meta:
+      id: fld_c2acb8f251f74cfb89bee7e52e6ba71c
+      created: 1774292252394
+      modified: 1774292264522
+      sortKey: -1771483704457
+      description: ""
+    children:
+      - url: "{{ _.url }}/user/register"
+        name: register user
+        meta:
+          id: req_03797938de0c4d33a0d049e17749dcac
+          created: 1774292274361
+          modified: 1774293287503
+          isPrivate: false
+          description: ""
+          sortKey: -1774292480164
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"user_id": "7ef624e2-790c-468c-91c6-bf97d7232620",
+            	"name": "heshanthenura",
+            	"email": "heshanthenura@gmail.com"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: admin
+    meta:
+      id: fld_96eb2916ea8449caa6cf87aecd1523d8
+      created: 1774899648705
+      modified: 1774899652181
+      sortKey: -1774899648705
+      description: ""
+    children:
+      - url: "{{ _.url }}/admin/submissions/dsa"
+        name: get dsa submission results
+        meta:
+          id: req_ddf2e112ccce484b9e97d93fd4a64b96
+          created: 1774899653372
+          modified: 1775110297499
+          isPrivate: false
+          description: ""
+          sortKey: -1774899669472
+        method: GET
+        parameters:
+          - name: page
+            value: "1"
+            description: ""
+            disabled: false
+          - name: pageSize
+            value: "10"
+            description: ""
+            disabled: false
+        headers:
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
+          - name: Authorization
+            value: Bearer {{ _.token }}
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: localhost:8080/api/admin/submissions/dsa/cb10c5ef-d0e7-467d-bd6a-1fe0688c41a0/details
+        name: get dsa submission
+        meta:
+          id: req_1db908c5a2e44450a1a2072dd6ff6f12
+          created: 1774900285278
+          modified: 1775112700180
+          isPrivate: false
+          description: ""
+          sortKey: -1774899669572
+        method: GET
+        parameters:
+          - name: base64_encoded
+            value: "true"
+            description: ""
+            disabled: false
+          - name: fields
+            value: source_code,stdin,expected_output,stdout,stderr,status,language_id
+            description: ""
+            disabled: false
+        headers:
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
+          - name: Authorization
+            value: Bearer {{ _.token }}
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
 cookieJar:
   name: Default Jar
   meta:
     id: jar_337cfed8dadc5b57a74e19d3b03405ffcb0d6df1
     created: 1767255661430
-    modified: 1774088232229
+    modified: 1775109778315
   cookies:
-    - id: e796876b-a943-4259-b676-6b0cfd7b6871
+    - id: caf6fc15-369f-4929-9b87-ac9087b27b56
       key: ""
       value: ""
       domain: accounts.sliitmozilla.org
@@ -328,9 +540,9 @@ cookieJar:
       httpOnly: true
       hostOnly: true
       pathIsDefault: true
-    - id: 9045865b-f182-4366-88cd-2026941dd330
+    - id: 7ff11525-954c-487b-a415-56c5ae95079f
       key: refreshToken
-      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzY2ODAyMzUsImlhdCI6MTc3NDA4ODIzNSwiaWQiOiI3ZWY2MjRlMi03OTBjLTQ2OGMtOTFjNi1iZjk3ZDcyMzI2MjAifQ.DG9VsCNviqUBpmFPrMDXbxIykxXlG8ZyRszGLC4cf9M
+      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzc3MDE3ODMsImlhdCI6MTc3NTEwOTc4MywiaWQiOiI3ZWY2MjRlMi03OTBjLTQ2OGMtOTFjNi1iZjk3ZDcyMzI2MjAifQ.WGTa5hYL0WEDxIqeE-rF4yGI05r9ngUt4cWhKvEiKwc
       domain: accounts.sliitmozilla.org
       path: /api
       secure: false
@@ -342,9 +554,9 @@ environments:
   meta:
     id: env_337cfed8dadc5b57a74e19d3b03405ffcb0d6df1
     created: 1767255661425
-    modified: 1771485188911
+    modified: 1774966604246
     isPrivate: false
   data:
-    url: localhost:3000/api
+    url: https://judge0-be.vercel.app/api
     token: "{% response 'body', 'req_e1c90aed7277438cba8868b76cced351',
       'b64::JC5kYXRhLnRva2Vu::46b', 'never', 60 %}"
