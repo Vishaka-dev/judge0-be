@@ -13,6 +13,7 @@ func ChallengeRoutes(r *gin.RouterGroup) {
 		challenge.GET("/leaderboard/get", handlers.GetLeaderboardHandler)
 		challenge.GET("/get/:id", handlers.GetChallengeByIdHandler)
 		challenge.GET("/submission/dsa", middlewares.AuthMiddleware(), handlers.GetDSASubmissionByIdHandler)
+		challenge.GET("/:id/submissions", middlewares.AuthMiddleware(), handlers.GetUserChallengeSubmissionsHandler)
 		challenge.POST("/add", middlewares.AuthMiddleware("Codenight host"), handlers.AddChallengeHandler)
 		challenge.POST("/test", middlewares.AuthMiddleware(), handlers.TestDSAChallengeHandler)
 		challenge.POST("/submit/dsa", middlewares.AuthMiddleware(), handlers.SubmitDSAChallengeHandler)

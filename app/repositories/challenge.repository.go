@@ -890,3 +890,49 @@ func GetDSASubmissionResults(ctx context.Context, page, pageSize string) ([]type
 	logger.Log.Info("Fetched DSA submission results", "count", len(results), "page", p, "totalPages", totalPages)
 	return results, p, totalPages, nil
 }
+
+func GetUserChallengeSubmissions(ctx context.Context, challengeID string, userID string) ([]types.UserChallengeSubmissionType, error) {
+	pool := database.GetPool()
+	ctx, cancel := utils.WithTimeout(ctx)
+	defer cancel()
+
+	rows, err := pool.Query(ctx,
+		`SELECT submission_id, challenge_id, user_id, test_count, pass_count, fail_count, evaluation_status, created_at
+		FROM dsa_submissions
+		WHERE challenge_id = $1 AND user_id = $2
+		ORDER BY created_at DESC`,
+		challengeID, userID,
+	)
+	if err != nil {
+		logger.Log.Error("GetUserChallengeSubmissions: query error", "challenge_id", challengeID, "user_id", userID, "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	submissions := []types.UserChallengeSubmissionType{}
+	for rows.Next() {
+		var s types.UserChallengeSubmissionType
+		if err := rows.Scan(
+			&s.SubmissionID,
+			&s.ChallengeID,
+			&s.UserID,
+			&s.TestCount,
+			&s.PassCount,
+			&s.FailCount,
+			&s.EvaluationStatus,
+			&s.CreatedAt,
+		); err != nil {
+			logger.Log.Error("GetUserChallengeSubmissions: scan error", "error", err)
+			return nil, err
+		}
+		submissions = append(submissions, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.Log.Error("GetUserChallengeSubmissions: rows error", "error", err)
+		return nil, err
+	}
+
+	logger.Log.Info("Fetched user challenge submissions", "challenge_id", challengeID, "user_id", userID, "count", len(submissions))
+	return submissions, nil
+}

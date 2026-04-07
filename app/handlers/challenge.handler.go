@@ -326,3 +326,41 @@ func GetDSASubmissionByIdHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, submission)
 
 }
+
+func GetUserChallengeSubmissionsHandler(c *gin.Context) {
+	challengeID := strings.TrimSpace(c.Param("id"))
+	if challengeID == "" {
+		logger.Log.Warn("Validation failed in GetUserChallengeSubmissionsHandler", "error", "challenge id is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "challenge id is required"})
+		return
+	}
+
+	userIdValue, exists := c.Get("user_id")
+	if !exists {
+		logger.Log.Error("Missing user_id in request context", "challenge_id", challengeID)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	userId, ok := userIdValue.(string)
+	if !ok || strings.TrimSpace(userId) == "" {
+		logger.Log.Error("Invalid user_id type in request context", "challenge_id", challengeID)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	logger.Log.Info("Fetching user challenge submissions", "challenge_id", challengeID, "user_id", userId)
+	ctx := c.Request.Context()
+	submissions, err := repositories.GetUserChallengeSubmissions(ctx, challengeID, userId)
+	if err != nil {
+		logger.Log.Error("Failed to get user challenge submissions", "challenge_id", challengeID, "user_id", userId, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch submissions"})
+		return
+	}
+
+	c.JSON(http.StatusOK, types.UserChallengeSubmissionsResponseType{
+		ChallengeID: challengeID,
+		Submissions: submissions,
+	})
+}
+

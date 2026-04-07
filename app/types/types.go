@@ -132,3 +132,19 @@ type DSASubmissionResultType struct {
 	Status       int    `json:"status"`
 	Token        string `json:"token"`
 }
+
+type UserChallengeSubmissionType struct {
+	SubmissionID     string `json:"submission_id"`
+	ChallengeID      int    `json:"challenge_id"`
+	UserID           string `json:"user_id"`
+	TestCount        int    `json:"test_count"`
+	PassCount        int    `json:"pass_count"`
+	FailCount        int    `json:"fail_count"`
+	EvaluationStatus int    `json:"evaluation_status"`
+	CreatedAt        string `json:"created_at"`
+}
+
+type UserChallengeSubmissionsResponseType struct {
+	ChallengeID string                        `json:"challengeId"`
+	Submissions []UserChallengeSubmissionType  `json:"submissions"`
+}
